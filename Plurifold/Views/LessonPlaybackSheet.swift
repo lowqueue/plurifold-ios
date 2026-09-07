@@ -47,11 +47,17 @@ struct LessonPlaybackSheet: View {
                     }
                 }
                 .padding(.horizontal, 24)
-                Text("Hold a sentence for two seconds to study its words.")
+                Text("Hold a sentence for one second to study its words.")
                     .font(.footnote).foregroundStyle(Palette.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 24).padding(.bottom, 12)
                 transcript
+                    .background(Palette.readingSurface, in: RoundedRectangle(cornerRadius: 16))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 16).stroke(Palette.line, lineWidth: 1.5)
+                            .allowsHitTesting(false)
+                    }
+                    .padding(.horizontal, 16).padding(.bottom, 12)
             }
             .studyBackground()
             .navigationTitle(lesson.title)
@@ -79,7 +85,7 @@ struct LessonPlaybackSheet: View {
             }
             .onDisappear { pauseRequest = UUID() }
         }
-        .tint(Palette.ink)
+        .tint(Palette.accent)
     }
 
     private var player: some View {
@@ -135,14 +141,14 @@ struct LessonPlaybackSheet: View {
             .foregroundStyle(current || held ? Palette.ink : Palette.secondary)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.vertical, 5)
-            .background(held ? Palette.field : Color.clear)
+            .background(held ? Palette.accentSoft : Color.clear)
             .overlay(alignment: .leading) {
                 if current {
-                    Capsule().fill(Palette.secondary).frame(width: 3).offset(x: -12)
+                    Capsule().fill(Palette.warm).frame(width: 3).offset(x: -12)
                 }
             }
             .contentShape(Rectangle())
-            .onLongPressGesture(minimumDuration: 2, maximumDistance: 16, pressing: { pressing in
+            .onLongPressGesture(minimumDuration: 1, maximumDistance: 16, pressing: { pressing in
                 if pressing {
                     // Snapshot on touch-down, before a timing event can advance the transcript.
                     heldSentence = sentence

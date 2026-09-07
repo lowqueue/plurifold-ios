@@ -2,13 +2,30 @@
 
 Updated on 2026-09-07. The development workspace runs Linux and has no Xcode or native iOS simulator. Historical build results and current source checks are separated below.
 
-## Latest Codemagic compile correction
+## Current Home, selection, and color update
+
+- The phrase hold is now 0.20 seconds. A reused, prewarmed selection feedback generator ticks when dragging begins and when the endpoint enters a different word, including shortening and reversing. Repeated samples on one word, blank space, and cancelled gestures do not emit ticks. Selection changes still do not request AI responses.
+- Playback sentence study opens after a one-second hold. The sentence is captured on touch-down and following stays frozen while holding/studying it; the existing pause and return behavior remains.
+- Signed-in Home lists available languages with flags. Each destination receives only its selected language's courses and lessons. Empty, unknown, or removed language choices cannot become an unfiltered library. Courses keep their chapter folders. Words and Account retain their existing roles.
+- The website's current `app/colorways.css` supplied the Blue Hour light/dark palette, with green course accents and gold details. Language, course, and lesson entries have visible borders. One frame surrounds the continuous transcript; the reader does not add passage bubbles. The website source was inspected read-only and was not changed.
+
+Completed source checks:
+
+- All 37 Swift files parsed without grammar errors: 30 app sources and seven test files. This is not native compilation or Swift typechecking.
+- The regenerated Xcode project validated 106 object references and includes the Home view, language catalog, and its tests. All Swift source paths were verified and the shared scheme parsed as XML.
+- The suite now contains 48 XCTest methods. Two new word-feedback tests cover boundary changes, shrinking, reversal, stationary samples, and gesture lifecycle. Three new language-catalog tests cover deduplication/counts, unavailable content, and invalid or removed language isolation. XCTest has not been run locally.
+- Independent source review checked the one-second hold and frozen target, haptic timing, and the reading-panel hit targets. Its padding is included in the existing coordinate conversions for bookmarks and autoscroll; its stroke ignores touch input and clearing is attached to the background.
+- The supplied icon and explicit `CGFloat.greatestFiniteMagnitude` correction remain intact. No signing, backend, or Codemagic workflow change was needed. Whitespace checks passed.
+
+Codemagic must compile and run the native tests before installing this revision. Check the actual 0.2-second hold, word-crossing haptics, ordinary scrolling, one-second sentence study near a cue transition, light/dark borders, tapping panel padding to clear, and Home language navigation on the iPhone. Haptic feedback depends on device support and settings; its physical feel cannot be verified in this Linux workspace.
+
+## Earlier Codemagic compile correction
 
 The supplied `test_sign_in_and_text_selection(1).log` reports one blocking compiler error at `SelectablePassage.swift:646`: `CGSize(width: 0, height: .greatestFiniteMagnitude)` is ambiguous between CGFloat and Double. The three failed build commands listed at the end are consequences of that same error. XCTest was cancelled before execution; this log contains no runtime crash or test result.
 
 Both text-sizing expressions now specify `CGFloat.greatestFiniteMagnitude`. Only `Plurifold/Views/SelectablePassage.swift` changes executable source. Its Swift grammar and the patch's whitespace were checked, but the corrected source must still compile and run the 43 tests in Codemagic. The unrelated traitCollectionDidChange deprecation warning remains non-blocking. No tests or build gates were removed.
 
-## Current player and selection revision
+## Earlier player and selection revision
 
 The supplied LingQ recording shows a transcript-first reader, a player panel sliding up from the bottom, following text, and a separate sentence study view. The supplied Plurifold recording shows a persistent selection after dismissing its explanation and little visual distinction between active and vocabulary highlights. There are no touch indicators, so exact input latency or hold duration cannot be measured from these recordings.
 
@@ -31,7 +48,7 @@ Completed checks:
 
 There are **43 XCTest methods**: seven session, fifteen selection/geometry, six timing, two sentence-mapping, four course-organization, and nine study-store tests. New coverage exercises hold-versus-scroll decisions, tap-to-clear, incremental display ranges, geometry hit testing, timing gaps/duplicates/backward seeking, and sentence source mapping. These tests have been added but have not been executed in this Linux workspace.
 
-The next Codemagic run must establish native compilation and XCTest results. On iPhone, verify the 0.35-second hold gesture, tap-away clearing, long-document scrolling, source-timestamp following, two-second sentence hold across a cue transition, paused player position after study, and VoiceOver/Dynamic Type. The YouTube API must load for clock callbacks; following is limited to the timing granularity supplied by each lesson. The desktop/mobile website is unchanged.
+That revision still required native compilation, XCTest, and device checks for gestures, clearing, long-document scrolling, following, sentence study across cue transitions, and VoiceOver/Dynamic Type. The current hold durations and device checks are listed at the top of this record. The YouTube API must load for clock callbacks; following is limited to the timing granularity supplied by each lesson. The desktop/mobile website is unchanged.
 
 ## Earlier reader and course organization update
 
@@ -84,7 +101,7 @@ The prepared course catalog contained four course collections with 75 entries. T
 
 ## Native test gate still to run
 
-The **Plurifold - TestFlight** workflow runs all 43 current tests before signing and uploading the IPA.
+The **Plurifold - TestFlight** workflow runs all 48 current tests before signing and uploading the IPA.
 
 The supplied Codemagic log establishes native compilation and simulator test execution for its own source revision. This Linux workspace can validate Swift grammar but cannot run Xcode or the new regression tests. The reader/course update still requires Codemagic verification and a device check.
 

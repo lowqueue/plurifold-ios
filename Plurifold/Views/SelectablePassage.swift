@@ -68,7 +68,7 @@ struct SelectablePassage: UIViewRepresentable {
         gesture.onTouchBegan = { [weak coordinator] point in coordinator?.beginSelection(at: point) ?? false }
         gesture.onTouchMoved = { [weak coordinator] point in coordinator?.moveSelection(to: point) }
         gesture.onTouchEnded = { [weak coordinator] held in coordinator?.finishSelection(afterHold: held) }
-        gesture.onHoldBegan = { UISelectionFeedbackGenerator().selectionChanged() }
+        gesture.onHoldBegan = { [weak coordinator] in coordinator?.selectionHoldBegan() }
         gesture.onTouchCancelled = { [weak coordinator] in coordinator?.cancelSelection() }
         view.addGestureRecognizer(gesture)
         coordinator.selectionGesture = gesture
@@ -126,6 +126,8 @@ struct SelectablePassage: UIViewRepresentable {
         private var savedRanges: [NSRange] = []
         private var activeRange: NSRange?
         private var anchorRange: NSRange?
+        private let selectionFeedback = UISelectionFeedbackGenerator()
+        private var wordFeedback = PassageWordFeedbackState()
         private var pointerInWindow: CGPoint?
         private var displayLink: CADisplayLink?
         private var geometryUpdateScheduled = false
@@ -233,6 +235,7 @@ struct SelectablePassage: UIViewRepresentable {
 
         private func clearSelection(notify: Bool) {
             selectionGesture?.cancelTracking()
+            wordFeedback.reset()
             previousRange = nil
             anchorRange = nil
             pointerInWindow = nil
@@ -291,9 +294,21 @@ struct SelectablePassage: UIViewRepresentable {
             }
             previousRange = activeRange
             anchorRange = word
+            wordFeedback.begin(at: word)
+            selectionFeedback.prepare()
             setActiveRange(word)
             pointerInWindow = view.convert(point, to: nil)
             return true
+        }
+
+        func selectionHoldBegan() {
+            guard anchorRange != nil else { return }
+            emitSelectionFeedback()
+        }
+
+        private func emitSelectionFeedback() {
+            selectionFeedback.selectionChanged()
+            selectionFeedback.prepare()
         }
 
         func moveSelection(to point: CGPoint) {
@@ -314,10 +329,17 @@ struct SelectablePassage: UIViewRepresentable {
                                    y: point.y - view.textContainerInset.top)
             guard let endpoint = wordGeometry.word(at: position, nearest: true) else { return }
             setActiveRange(PassageTextSelection.phraseRange(anchor: anchorRange, endpoint: endpoint))
+            // Selection can snap across a gap, but feedback waits until the
+            // finger reaches a word. Track the endpoint, not phrase length,
+            // so shortening and reversing a selection also give one tick.
+            if wordFeedback.move(to: wordGeometry.word(at: position, nearest: false)) {
+                emitSelectionFeedback()
+            }
         }
 
         func finishSelection(afterHold: Bool) {
             stopAutoscroll()
+            wordFeedback.reset()
             guard anchorRange != nil, let range = activeRange,
                   let selection = PassageSelection(context: parent.text, range: range) else {
                 cancelSelection()
@@ -335,6 +357,7 @@ struct SelectablePassage: UIViewRepresentable {
 
         func cancelSelection() {
             stopAutoscroll()
+            wordFeedback.reset()
             if anchorRange != nil { setActiveRange(previousRange) }
             previousRange = nil
             anchorRange = nil
@@ -459,6 +482,7 @@ struct SelectablePassage: UIViewRepresentable {
 
         func suspend() {
             selectionGesture?.cancelTracking()
+            wordFeedback.reset()
             stopAutoscroll()
         }
 
@@ -674,7 +698,7 @@ final class PassageTextView: UITextView {
     }
 }
 
-/// Quick taps select one word. A stationary 0.35-second hold claims phrase
+/// Quick taps select one word. A stationary 0.20-second hold claims phrase
 /// dragging in any direction; movement before the hold yields to scrolling.
 final class WordDragGestureRecognizer: UIGestureRecognizer {
     var onTouchBegan: ((CGPoint) -> Bool)?
@@ -774,7 +798,7 @@ final class WordDragGestureRecognizer: UIGestureRecognizer {
 
 enum PassageDragDecision: Equatable {
     case pending, select, scroll
-    static let holdDuration: TimeInterval = 0.35
+    static let holdDuration: TimeInterval = 0.20
 
     static func decide(dx: CGFloat, dy: CGFloat, holdReady: Bool) -> Self {
         if holdReady { return .select }
@@ -786,6 +810,22 @@ enum PassageTapDecision {
     static func shouldClear(previous: NSRange?, completed: NSRange, afterHold: Bool) -> Bool {
         !afterHold && previous == completed
     }
+}
+
+/// Feedback follows distinct word boundaries during one drag. Empty space,
+/// repeated display-link samples, and a cancelled gesture produce no ticks.
+struct PassageWordFeedbackState {
+    private var lastWord: NSRange?
+
+    mutating func begin(at word: NSRange) { lastWord = word }
+
+    mutating func move(to word: NSRange?) -> Bool {
+        guard let previous = lastWord, let word, word != previous else { return false }
+        lastWord = word
+        return true
+    }
+
+    mutating func reset() { lastWord = nil }
 }
 
 enum PassageTextSelection {

@@ -3,126 +3,114 @@ import SwiftUI
 struct LiveLibraryView: View {
     @EnvironmentObject private var store: LiveLibraryStore
     @State private var search = ""
-    @State private var language = ""
+    let languageCode: String
+    let languageName: String
 
-    private var languages: [(code: String, name: String)] {
-        var names: [String: String] = [:]
-        for course in store.courses { names[course.languageCode] = course.languageName }
-        return names.map { (code: $0.key, name: $0.value) }
-            .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
-    }
+    private var catalog: MobileLanguageCatalog { MobileLanguageCatalog(courses: store.courses) }
+    private var language: MobileLanguageOption? { catalog.language(for: languageCode) }
 
     private var index: MobileLibraryIndex {
-        MobileLibraryIndex(courses: store.courses, search: search, languageCode: language)
+        MobileLibraryIndex(courses: catalog.courses(for: languageCode), search: search)
     }
 
     var body: some View {
-        NavigationStack {
-            List {
-                if let notice = store.notice {
-                    Section {
-                        LibraryNoticeRow(notice: notice)
-                            .listRowBackground(Palette.surface)
-                    }
-                }
-
-                if !languages.isEmpty {
-                    Section {
-                        Picker("Language", selection: $language) {
-                            Text("All languages").tag("")
-                            ForEach(languages, id: \.code) { option in
-                                Text(option.name).tag(option.code)
-                            }
-                        }
-                        .listRowBackground(Palette.field)
-                    }
-                }
-
-                if store.isLoading && store.courses.isEmpty {
-                    Section {
-                        HStack {
-                            Spacer()
-                            ProgressView("Loading your library…").padding(.vertical, 36)
-                            Spacer()
-                        }
-                        .listRowBackground(Color.clear)
-                    }
-                } else if store.courses.isEmpty {
-                    Section {
-                        ContentUnavailableView {
-                            Label("Your library", systemImage: "books.vertical")
-                        } description: {
-                            Text(store.notice == nil
-                                 ? "Your Plurifold courses and lessons will appear here when they’re available."
-                                 : "Your library couldn’t load. Check your connection and try again.")
-                        }
-                        .listRowBackground(Color.clear)
-                    }
-                } else if index.isEmpty {
-                    Section {
-                        ContentUnavailableView("No matching content", systemImage: "magnifyingglass",
-                                               description: Text("Try another language or search term."))
-                            .listRowBackground(Color.clear)
-                    }
-                } else {
-                    if !index.courseFolders.isEmpty {
-                        Section {
-                            ForEach(index.courseFolders) { folder in
-                                NavigationLink {
-                                    LiveCourseView(courseID: folder.id, initialSearch: search)
-                                } label: {
-                                    courseRow(folder)
-                                }
-                                .listRowBackground(Palette.surface)
-                            }
-                        } header: {
-                            categoryHeader("Courses", subtitle: "Foundations and guided study", icon: "folder")
-                        }
-                    }
-
-                    if !index.lessonGroups.isEmpty {
-                        Section {
-                            ForEach(index.lessonGroups) { group in
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(group.title).font(.headline)
-                                    if language.isEmpty {
-                                        Text(group.languageName).font(.caption)
-                                    }
-                                }
-                                .foregroundStyle(Palette.secondary)
-                                .padding(.top, 12)
-                                .padding(.bottom, 3)
-                                .accessibilityAddTraits(.isHeader)
-                                .listRowSeparator(.hidden)
-                                .listRowBackground(Color.clear)
-
-                                ForEach(group.lessons) { lesson in
-                                    NavigationLink {
-                                        LiveReaderView(lessonID: lesson.id)
-                                    } label: {
-                                        LibraryLessonRow(lesson: lesson, hasPosition: store.positions[lesson.id] != nil)
-                                    }
-                                    .listRowBackground(Palette.surface)
-                                }
-                            }
-                        } header: {
-                            categoryHeader("Lessons", subtitle: "Videos, audio, and reading", icon: "play.rectangle")
-                        }
-                    }
+        List {
+            if let notice = store.notice {
+                Section {
+                    LibraryNoticeRow(notice: notice)
+                        .listRowBackground(Palette.surface)
                 }
             }
-            .listStyle(.insetGrouped)
-            .scrollContentBackground(.hidden)
-            .studyBackground()
-            .tint(Palette.ink)
-            .navigationTitle("Learn")
-            .searchable(text: $search, prompt: "Lessons, courses, channels")
-            .refreshable { await store.refresh() }
-            .task { if !store.hasLoaded { await store.refresh() } }
-            .onChange(of: store.courses) { _, _ in
-                if !language.isEmpty, !languages.contains(where: { $0.code == language }) { language = "" }
+
+            if store.isLoading && store.courses.isEmpty {
+                Section {
+                    HStack {
+                        Spacer()
+                        ProgressView("Loading your library…").padding(.vertical, 36)
+                        Spacer()
+                    }
+                    .listRowBackground(Color.clear)
+                }
+            } else if store.courses.isEmpty {
+                Section {
+                    ContentUnavailableView {
+                        Label("Your library", systemImage: "books.vertical")
+                    } description: {
+                        Text(store.notice == nil
+                             ? "Your Plurifold courses and lessons will appear here when they’re available."
+                             : "Your library couldn’t load. Check your connection and try again.")
+                    }
+                    .listRowBackground(Color.clear)
+                }
+            } else if language == nil {
+                Section {
+                    ContentUnavailableView("Language unavailable", systemImage: "globe",
+                                           description: Text("Return to Home to choose an available language, or pull down to refresh."))
+                        .listRowBackground(Color.clear)
+                }
+            } else if index.isEmpty {
+                Section {
+                    ContentUnavailableView("No matching content", systemImage: "magnifyingglass",
+                                           description: Text("Try another search term to find courses and lessons in \(languageName)."))
+                        .listRowBackground(Color.clear)
+                }
+            } else {
+                if !index.courseFolders.isEmpty {
+                    Section {
+                        ForEach(index.courseFolders) { folder in
+                            NavigationLink {
+                                LiveCourseView(courseID: folder.id, initialSearch: search)
+                            } label: {
+                                courseRow(folder)
+                            }
+                            .listRowSeparator(.hidden)
+                            .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
+                            .listRowBackground(Color.clear)
+                        }
+                    } header: {
+                        categoryHeader("Courses", subtitle: "Foundations and guided study", icon: "folder")
+                    }
+                }
+
+                if !index.lessonGroups.isEmpty {
+                    Section {
+                        ForEach(index.lessonGroups) { group in
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(group.title).font(.headline)
+                            }
+                            .foregroundStyle(Palette.secondary)
+                            .padding(.top, 12)
+                            .padding(.bottom, 3)
+                            .accessibilityAddTraits(.isHeader)
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Color.clear)
+
+                            ForEach(group.lessons) { lesson in
+                                NavigationLink {
+                                    LiveReaderView(lessonID: lesson.id)
+                                } label: {
+                                    LibraryLessonRow(lesson: lesson, hasPosition: store.positions[lesson.id] != nil)
+                                }
+                                .listRowSeparator(.hidden)
+                                .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
+                                .listRowBackground(Color.clear)
+                            }
+                        }
+                    } header: {
+                        categoryHeader("Lessons", subtitle: "Videos, audio, and reading", icon: "play.rectangle")
+                    }
+                }
             }
         }
+        .listStyle(.insetGrouped)
+        .scrollContentBackground(.hidden)
+        .studyBackground()
+        .tint(Palette.accent)
+        .navigationTitle(language?.name ?? languageName)
+        .navigationBarTitleDisplayMode(.inline)
+        .searchable(text: $search, prompt: "Lessons, courses, channels")
+        .refreshable { await store.refresh() }
+        .task { if !store.hasLoaded { await store.refresh() } }
     }
 
     private func categoryHeader(_ title: String, subtitle: String, icon: String) -> some View {
@@ -141,7 +129,7 @@ struct LiveLibraryView: View {
         HStack(alignment: .center, spacing: 16) {
             Image(systemName: "folder.fill")
                 .font(.title2)
-                .foregroundStyle(Palette.ink)
+                .foregroundStyle(Palette.green)
                 .frame(width: 36)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 6) {
@@ -163,7 +151,14 @@ struct LiveLibraryView: View {
                 }
             }
         }
-        .padding(.vertical, 12)
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Palette.courseSurface, in: RoundedRectangle(cornerRadius: 8))
+        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Palette.line, lineWidth: 1))
+        .overlay(alignment: .leading) {
+            RoundedRectangle(cornerRadius: 2).fill(Palette.green)
+                .frame(width: 4).padding(.vertical, 8).allowsHitTesting(false)
+        }
         .accessibilityElement(children: .combine)
         .accessibilityHint("Opens the chapters in this course")
     }
@@ -196,7 +191,10 @@ struct LibraryLessonRow: View {
             .font(.caption)
             .foregroundStyle(Palette.secondary)
         }
-        .padding(.vertical, 8)
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Palette.surface, in: RoundedRectangle(cornerRadius: 8))
+        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Palette.line, lineWidth: 1))
     }
 }
 

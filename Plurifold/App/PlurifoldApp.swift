@@ -39,14 +39,14 @@ private struct SignedInRoot: View {
 
     var body: some View {
         TabView {
-            LiveLibraryView()
-                .tabItem { Label("Learn", systemImage: "books.vertical") }
+            LiveHomeView()
+                .tabItem { Label("Home", systemImage: "house") }
             LiveWordsView()
                 .tabItem { Label("Words", systemImage: "bookmark") }
             account
                 .tabItem { Label("Account", systemImage: "person.crop.circle") }
         }
-        .tint(Palette.ink)
+        .tint(Palette.accent)
         .environmentObject(store)
     }
 

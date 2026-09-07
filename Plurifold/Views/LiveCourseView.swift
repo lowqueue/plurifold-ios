@@ -48,7 +48,9 @@ struct LiveCourseView: View {
                             } label: {
                                 LibraryLessonRow(lesson: lesson, hasPosition: store.positions[lesson.id] != nil)
                             }
-                            .listRowBackground(Palette.surface)
+                            .listRowSeparator(.hidden)
+                            .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
+                            .listRowBackground(Color.clear)
                         }
                     } header: {
                         Text(folder.chapters.count == folder.course.lessons.count ? "Chapters" : "Matching chapters")
@@ -69,7 +71,7 @@ struct LiveCourseView: View {
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
         .studyBackground()
-        .tint(Palette.ink)
+        .tint(Palette.accent)
         .navigationTitle("Course")
         .navigationBarTitleDisplayMode(.inline)
         .searchable(text: $search, prompt: "Chapters in this course")

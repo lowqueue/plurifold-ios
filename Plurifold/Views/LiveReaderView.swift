@@ -40,7 +40,7 @@ struct LiveReaderView: View {
             }
         }
         .studyBackground()
-        .tint(Palette.ink)
+        .tint(Palette.accent)
         .navigationTitle(lesson?.title ?? "Lesson")
         .navigationBarTitleDisplayMode(.inline)
         .task(id: "\(lessonID)|\(reloadID)") { await load() }
@@ -103,11 +103,13 @@ struct LiveReaderView: View {
                             },
                             onSelect: { pendingSelection = $0 }
                         )
+                        .readingPanel(onBackgroundTap: clearSelection)
                     }
 
                     if showTranslations { translations(lesson) }
                     if !lesson.vocabulary.isEmpty {
                         DisclosureGroup("Lesson vocabulary") { glossary(lesson).padding(.top, 14) }
+                            .studyCard()
                     }
                     resources(lesson)
                 }
@@ -125,7 +127,10 @@ struct LiveReaderView: View {
 
     private func header(_ lesson: MobileLesson) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Eyebrow(text: lesson.languageName)
+            HStack(spacing: 10) {
+                RoundedRectangle(cornerRadius: 2).fill(Palette.warm).frame(width: 24, height: 4)
+                Eyebrow(text: lesson.languageName)
+            }
             Text(lesson.title)
                 .font(.largeTitle.weight(.semibold))
                 .accessibilityAddTraits(.isHeader)
@@ -156,8 +161,12 @@ struct LiveReaderView: View {
             Label(hasVideo ? "Watch video" : "Listen to recording",
                   systemImage: hasVideo ? "play.rectangle" : "play.circle")
                 .frame(minHeight: 44)
+                .padding(.horizontal, 16)
+                .foregroundStyle(Palette.accent)
+                .background(Palette.accentSoft, in: RoundedRectangle(cornerRadius: 12))
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Palette.accent, lineWidth: 1))
         }
-        .buttonStyle(.bordered)
+        .buttonStyle(.plain)
         .accessibilityHint("Opens the player and transcript")
     }
 
@@ -200,6 +209,9 @@ struct LiveReaderView: View {
         .padding(.horizontal, 20)
         .padding(.vertical, 6)
         .background(.regularMaterial)
+        .overlay(alignment: .top) {
+            Rectangle().fill(Palette.line).frame(height: 1).allowsHitTesting(false)
+        }
     }
 
     private func readCurrentParagraph(_ lesson: MobileLesson) {
@@ -234,6 +246,7 @@ struct LiveReaderView: View {
                 Text(available.joined(separator: "\n\n"))
                     .foregroundStyle(Palette.secondary).textSelection(.enabled)
             }
+            .studyCard()
         }
     }
 
@@ -282,6 +295,7 @@ struct LiveReaderView: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            .studyCard()
         }
     }
 

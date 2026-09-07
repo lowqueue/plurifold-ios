@@ -105,7 +105,6 @@ final class PassageSelectionTests: XCTestCase {
     }
 
     func testMovementBeforeHoldScrollsAndCompletedHoldSelectsInEveryDirection() {
-        XCTAssertEqual(PassageDragDecision.holdDuration, 0.35, accuracy: 0.001)
         XCTAssertEqual(PassageDragDecision.decide(dx: 2, dy: 5, holdReady: false), .pending)
         XCTAssertEqual(PassageDragDecision.decide(dx: 2, dy: 8, holdReady: false), .scroll)
         XCTAssertEqual(PassageDragDecision.decide(dx: 8, dy: 2, holdReady: false), .scroll)
@@ -113,6 +112,40 @@ final class PassageSelectionTests: XCTestCase {
         XCTAssertEqual(PassageDragDecision.decide(dx: 0, dy: 0, holdReady: true), .select)
         XCTAssertEqual(PassageDragDecision.decide(dx: 0, dy: -20, holdReady: true), .select)
         XCTAssertEqual(PassageDragDecision.decide(dx: -20, dy: 10, holdReady: true), .select)
+    }
+
+    func testWordFeedbackTicksAtNewEndpointsWhenExtendingShorteningAndReversing() {
+        let first = NSRange(location: 0, length: 2)
+        let middle = NSRange(location: 3, length: 6)
+        let last = NSRange(location: 10, length: 5)
+        var feedback = PassageWordFeedbackState()
+        feedback.begin(at: middle)
+
+        XCTAssertFalse(feedback.move(to: middle))
+        XCTAssertFalse(feedback.move(to: nil)) // Crossing a space is silent.
+        XCTAssertTrue(feedback.move(to: last)) // Extend to the right.
+        for _ in 0..<60 { XCTAssertFalse(feedback.move(to: last)) }
+        XCTAssertFalse(feedback.move(to: nil))
+        XCTAssertFalse(feedback.move(to: last)) // Re-entering the same word is silent.
+        XCTAssertTrue(feedback.move(to: middle)) // Shorten back to the anchor.
+        XCTAssertTrue(feedback.move(to: first)) // Reverse beyond the anchor.
+        XCTAssertFalse(feedback.move(to: first))
+    }
+
+    func testWordFeedbackStopsAfterCancellationAndStartsFreshForTheNextGesture() {
+        let first = NSRange(location: 0, length: 4)
+        let second = NSRange(location: 5, length: 4)
+        var feedback = PassageWordFeedbackState()
+        XCTAssertFalse(feedback.move(to: first))
+        feedback.begin(at: first)
+        feedback.reset() // Early swipe, interruption, clear, or completed gesture.
+        XCTAssertFalse(feedback.move(to: second))
+        XCTAssertFalse(feedback.move(to: nil))
+        feedback.begin(at: second)
+        XCTAssertFalse(feedback.move(to: second))
+        XCTAssertTrue(feedback.move(to: first))
+        feedback.reset()
+        XCTAssertFalse(feedback.move(to: second))
     }
 
     func testRepeatedWordTapClearsButHoldAndNewSelectionsRemain() {

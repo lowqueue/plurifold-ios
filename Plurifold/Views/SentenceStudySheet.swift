@@ -30,6 +30,7 @@ struct SentenceStudySheet: View {
                                 pendingSelection = document.selection(in: sentence, localRange: selected.range)
                             }
                         )
+                        .readingPanel(onBackgroundTap: clearSelection)
                         Text("Tap a word, or hold briefly and drag across a phrase. Tap elsewhere to clear your selection.")
                             .font(.footnote).foregroundStyle(Palette.secondary)
                         Button("Explain sentence", systemImage: "text.magnifyingglass") {
@@ -70,7 +71,7 @@ struct SentenceStudySheet: View {
                     .presentationDragIndicator(.visible)
             }
         }
-        .tint(Palette.ink)
+        .tint(Palette.accent)
     }
 
     private func clearSelection() {
