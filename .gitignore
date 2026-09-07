@@ -1,0 +1,13 @@
+build/
+DerivedData/
+__pycache__/
+*.pyc
+xcuserdata/
+*.xcuserstate
+.DS_Store
+*.p8
+*.p12
+*.pem
+*.mobileprovision
+Plurifold-simulator.zip
+build.log

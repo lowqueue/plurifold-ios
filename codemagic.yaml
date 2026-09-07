@@ -27,3 +27,51 @@ workflows:
     artifacts:
       - Plurifold-simulator.zip
       - build.log
+
+  plurifold-testflight:
+    name: Plurifold - TestFlight
+    instance_type: mac_mini_m2
+    max_build_duration: 30
+    integrations:
+      app_store_connect: plurifold-apple
+    environment:
+      xcode: latest
+      # These are the reference names in Codemagic's Code signing identities.
+      # Upload the certificate and matching App Store profile before starting.
+      ios_signing:
+        certificates:
+          - plurifold-distribution
+        provisioning_profiles:
+          - plurifold-app-store
+    scripts:
+      - name: Configure App Store signing
+        script: |
+          set -euo pipefail
+          xcode-project use-profiles \
+            --project Plurifold.xcodeproj \
+            --custom-export-options='{"testFlightInternalTestingOnly": true}'
+      - name: Build the signed iPhone app
+        script: |
+          set -euo pipefail
+          : "${PROJECT_BUILD_NUMBER:?Codemagic must provide PROJECT_BUILD_NUMBER}"
+          if [[ ! "$PROJECT_BUILD_NUMBER" =~ ^[0-9]+$ ]]; then
+            echo "PROJECT_BUILD_NUMBER must be a nonnegative integer." >&2
+            exit 1
+          fi
+          PLURIFOLD_BUILD_NUMBER=$((10#$PROJECT_BUILD_NUMBER + 1))
+          xcode-project build-ipa \
+            --project Plurifold.xcodeproj \
+            --scheme Plurifold \
+            --config Release \
+            --archive-xcargs "CURRENT_PROJECT_VERSION=$PLURIFOLD_BUILD_NUMBER COMPILER_INDEX_STORE_ENABLE=NO"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - build/ios/xcarchive/**/*.dSYM
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        # The IPA is uploaded to App Store Connect for manual internal testing.
+        # submit_to_testflight controls beta REVIEW, not the initial IPA upload.
+        submit_to_testflight: false
+        submit_to_app_store: false

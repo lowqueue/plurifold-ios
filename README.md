@@ -1,8 +1,14 @@
 # Plurifold for iOS
 
-A first native SwiftUI prototype, version 0.1.0. Built around Plurifold's Verdant palette, monospaced interface details, and a quiet reading surface.
+A first native SwiftUI prototype, now using version 1.0 for the App Store Connect record. Built around Plurifold's Verdant palette, monospaced interface details, and a quiet reading surface.
 
-**Status:** source project, not an installable app. Swift syntax and project structure were checked on Linux. The app has not yet been compiled or run in Xcode, and its XCTest tests have not been executed. A Mac build is the next required verification step.
+**Status:** the original simulator build succeeded in Codemagic on September 7, 2026, at commit `a9e0550`. That build compiled and packaged the app; it did not launch the simulator or run XCTest. The icon and TestFlight workflow added afterward still need their first signed build and device check.
+
+## Windows and iPhone setup
+
+Follow [TESTFLIGHT.md](TESTFLIGHT.md) to configure the distribution certificate and profile in Codemagic, upload the project update to GitHub, and install the first TestFlight build on your iPhone. The workflow uses the existing `plurifold-apple` integration. Signing files remain in Codemagic.
+
+There are two manual workflows in `codemagic.yaml`: **Plurifold - first simulator build** and **Plurifold - TestFlight**. The second archives a Release build for iPhone/iPad and uploads it to App Store Connect for internal testing. Build numbers come from Codemagic's project build counter plus one. If builds are later uploaded from another system, coordinate their build numbers before uploading again.
 
 ## Open it on a Mac
 
@@ -41,7 +47,7 @@ The app does not connect to your website account or cloud progress. It has no ba
 
 Audio stops when the app becomes inactive, you leave its screen, an audio interruption starts, or headphones disconnect. Background playback and lock-screen controls are future work.
 
-This slice does not yet include imported lessons/media, AI definitions, speaking practice, handwriting, full courses, website synchronization, or an App Store icon/release configuration. It is not ready for App Store submission or TestFlight distribution.
+This slice does not yet include imported lessons/media, AI definitions, speaking practice, handwriting, full courses, or website synchronization. It includes an app icon and an internal TestFlight workflow; signing resources and a successful Apple upload are still required. The workflow does not submit a public App Store release.
 
 ## Content provenance
 
@@ -60,8 +66,12 @@ The Verdant colors follow the current website's `lib/colorways.ts`: `#D5E2CA`, `
 | `Plurifold/Views` | Library, reader, word sheets, practice, and progress |
 | `Plurifold/Resources/catalog.json` | Bundled lesson content |
 | `Plurifold/Resources/PrivacyInfo.xcprivacy` | App-specific UserDefaults declaration; no tracking |
+| `Plurifold/Resources/Assets.xcassets` | Checked-in iPhone/iPad/App Store icon sizes |
 | `PlurifoldTests` | XCTest coverage for storage and content validation |
 | `scripts/generate_project.py` | Optional deterministic project regeneration after adding/removing files |
+| `design/AppIcon.svg` | Vector source of the green p-and-cursor icon |
+| `scripts/generate_app_icon.py` | Optional icon regeneration with CairoSVG; not needed for builds |
+| `TESTFLIGHT.md` | Windows setup, signing file names, upload, and installation |
 
 Local progress uses the `plurifold.ios.prototype.study.v1` UserDefaults key. Resetting lesson progress preserves saved expressions. Storage is intentionally separate from website data; deleting the app can remove its local study record.
 
