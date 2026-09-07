@@ -7,16 +7,20 @@ import WebKit
 /// Authentication credentials are never attached to media or YouTube requests.
 struct LessonMediaPlayer: View {
     let media: MobileMedia
+    var showsTitle = true
+    var pauseRequest: UUID? = nil
+    var onPlaybackStarted: @MainActor () -> Void = {}
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(media.title).font(.headline)
+            if showsTitle { Text(media.title).font(.headline) }
             if media.kind == "youtube", let videoID = LessonMediaURL.youtubeID(media.url) {
-                YouTubeLessonPlayer(videoID: videoID, start: media.start, end: media.end)
+                YouTubeLessonPlayer(videoID: videoID, start: media.start, end: media.end,
+                                    pauseRequest: pauseRequest, onPlaybackStarted: onPlaybackStarted)
             } else if ["audio", "video"].contains(media.kind),
                       let url = LessonMediaURL.https(media.url) {
                 NativeLessonPlayer(url: url, isVideo: media.kind == "video",
-                                   start: media.start, end: media.end)
+                                   start: media.start, end: media.end, pauseRequest: pauseRequest)
                     .id("\(media.id)|\(media.url)|\(media.start ?? -1)|\(media.end ?? -1)")
             } else {
                 Label("This lesson's media link is unavailable.", systemImage: "exclamationmark.circle")
@@ -241,6 +245,7 @@ private struct NativeLessonPlayer: View {
     let isVideo: Bool
     let start: Double?
     let end: Double?
+    let pauseRequest: UUID?
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var playback = LessonPlayback()
 
@@ -284,6 +289,7 @@ private struct NativeLessonPlayer: View {
         }
         .onAppear(perform: load)
         .onDisappear { playback.unload() }
+        .onChange(of: pauseRequest) { _, _ in playback.pause() }
         .onChange(of: scenePhase) { _, phase in
             if phase != .active { playback.pause() }
         }
@@ -302,6 +308,8 @@ private struct YouTubeLessonPlayer: View {
     let videoID: String
     let start: Double?
     let end: Double?
+    let pauseRequest: UUID?
+    let onPlaybackStarted: @MainActor () -> Void
     @Environment(\.scenePhase) private var scenePhase
     @State private var failed = false
     @State private var retryID = UUID()
@@ -317,7 +325,8 @@ private struct YouTubeLessonPlayer: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             YouTubeLessonWebView(videoID: videoID, start: start, end: end,
-                                 isActive: scenePhase == .active, failed: $failed)
+                                 isActive: scenePhase == .active, pauseRequest: pauseRequest,
+                                 onPlaybackStarted: onPlaybackStarted, failed: $failed)
                 .frame(height: 210)
                 .id("\(videoID)|\(start ?? -1)|\(end ?? -1)|\(retryID)")
             if failed {
@@ -342,16 +351,23 @@ private struct YouTubeLessonWebView: UIViewRepresentable {
     let start: Double?
     let end: Double?
     let isActive: Bool
+    let pauseRequest: UUID?
+    let onPlaybackStarted: @MainActor () -> Void
     @Binding var failed: Bool
 
-    func makeCoordinator() -> Coordinator { Coordinator(failed: $failed) }
+    func makeCoordinator() -> Coordinator {
+        Coordinator(videoID: videoID, onPlaybackStarted: onPlaybackStarted, failed: $failed)
+    }
 
     func makeUIView(context: Context) -> WKWebView {
+        context.coordinator.lastPauseRequest = pauseRequest
         let configuration = WKWebViewConfiguration()
         configuration.allowsInlineMediaPlayback = true
         configuration.mediaTypesRequiringUserActionForPlayback = .all
         configuration.websiteDataStore = .nonPersistent()
+        configuration.userContentController.add(context.coordinator, name: Coordinator.messageName)
         let webView = WKWebView(frame: .zero, configuration: configuration)
+        context.coordinator.webView = webView
         webView.navigationDelegate = context.coordinator
         webView.scrollView.isScrollEnabled = false
         webView.isOpaque = false
@@ -359,11 +375,13 @@ private struct YouTubeLessonWebView: UIViewRepresentable {
         // YouTube requires the installed app's bundle ID as a native WebView referer.
         let appID = (Bundle.main.bundleIdentifier ?? "com.plurifold.ios.prototype").lowercased()
         let origin = URL(string: "https://\(appID)")!
+        context.coordinator.originHost = origin.host
         var embed = URLComponents(string: "https://www.youtube.com/embed/\(videoID)")!
         let beginning = LessonMediaURL.start(start)
         embed.queryItems = [
             URLQueryItem(name: "playsinline", value: "1"),
             URLQueryItem(name: "autoplay", value: "0"),
+            URLQueryItem(name: "enablejsapi", value: "1"),
             URLQueryItem(name: "origin", value: origin.absoluteString)
         ]
         if beginning > 0 { embed.queryItems?.append(URLQueryItem(name: "start", value: String(Int(beginning)))) }
@@ -375,8 +393,34 @@ private struct YouTubeLessonWebView: UIViewRepresentable {
         <!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="referrer" content="strict-origin-when-cross-origin">
         <style>html,body{margin:0;width:100%;height:100%;background:transparent}iframe{border:0;width:100%;height:100%}</style>
-        </head><body><iframe title="YouTube lesson video" src="\(source)"
-        referrerpolicy="strict-origin-when-cross-origin" allow="encrypted-media; fullscreen; picture-in-picture" allowfullscreen></iframe></body></html>
+        </head><body><iframe id="plurifold-youtube-player" title="YouTube lesson video" src="\(source)"
+        referrerpolicy="strict-origin-when-cross-origin" allow="encrypted-media; fullscreen; picture-in-picture" allowfullscreen></iframe>
+        <script>
+        // The official iframe API reports actual playback, including native player controls.
+        // Loading and cuing the video never starts it automatically.
+        function reportPlurifoldPlayback() {
+          window.webkit.messageHandlers.\(Coordinator.messageName).postMessage({
+            event: 'playing', videoID: '\(videoID)', nonce: '\(context.coordinator.bridgeNonce)'
+          });
+        }
+        window.onYouTubeIframeAPIReady = function () {
+          window.plurifoldYouTubePlayer = new YT.Player('plurifold-youtube-player', {
+            events: {
+              onReady: function (event) {
+                if (event.target.getPlayerState() === YT.PlayerState.PLAYING) {
+                  reportPlurifoldPlayback();
+                }
+              },
+              onStateChange: function (event) {
+                if (event.data === YT.PlayerState.PLAYING) {
+                  reportPlurifoldPlayback();
+                }
+              }
+            }
+          });
+        };
+        </script><script async src="https://www.youtube.com/iframe_api"></script>
+        </body></html>
         """
         webView.loadHTMLString(html, baseURL: origin)
         return webView
@@ -384,19 +428,56 @@ private struct YouTubeLessonWebView: UIViewRepresentable {
 
     func updateUIView(_ webView: WKWebView, context: Context) {
         context.coordinator.failed = $failed
-        if !isActive { webView.pauseAllMediaPlayback(completionHandler: nil) }
+        context.coordinator.onPlaybackStarted = onPlaybackStarted
+        if !isActive || context.coordinator.lastPauseRequest != pauseRequest {
+            webView.pauseAllMediaPlayback(completionHandler: nil)
+        }
+        context.coordinator.lastPauseRequest = pauseRequest
     }
 
     static func dismantleUIView(_ webView: WKWebView, coordinator: Coordinator) {
+        coordinator.isDismantled = true
+        coordinator.onPlaybackStarted = {}
+        webView.configuration.userContentController.removeScriptMessageHandler(forName: Coordinator.messageName)
         webView.pauseAllMediaPlayback(completionHandler: nil)
         webView.stopLoading()
         webView.navigationDelegate = nil
         webView.loadHTMLString("", baseURL: nil)
     }
 
-    final class Coordinator: NSObject, WKNavigationDelegate {
+    @MainActor
+    final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
+        static let messageName = "plurifoldYouTube"
+        let bridgeNonce = UUID().uuidString
+        let videoID: String
+        weak var webView: WKWebView?
+        var originHost: String?
+        var isDismantled = false
+        var onPlaybackStarted: @MainActor () -> Void
         var failed: Binding<Bool>
-        init(failed: Binding<Bool>) { self.failed = failed }
+        var lastPauseRequest: UUID?
+        init(videoID: String, onPlaybackStarted: @escaping @MainActor () -> Void, failed: Binding<Bool>) {
+            self.videoID = videoID
+            self.onPlaybackStarted = onPlaybackStarted
+            self.failed = failed
+        }
+
+        func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+            // Accept only this embed's small main-frame callback, never messages sent
+            // directly by the cross-origin iframe, a navigated page, or a discarded player.
+            let origin = message.frameInfo.securityOrigin
+            guard !isDismantled, message.name == Self.messageName,
+                  let webView, message.webView === webView,
+                  userContentController === webView.configuration.userContentController,
+                  message.frameInfo.isMainFrame,
+                  origin.protocol == "https", origin.host == originHost,
+                  origin.port == 0 || origin.port == 443,
+                  let body = message.body as? [String: Any], body.count == 3,
+                  body["event"] as? String == "playing",
+                  body["videoID"] as? String == videoID,
+                  body["nonce"] as? String == bridgeNonce else { return }
+            onPlaybackStarted()
+        }
 
         func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
             if (error as NSError).code != NSURLErrorCancelled { failed.wrappedValue = true }

@@ -5,17 +5,20 @@ struct LiveReaderView: View {
     let lessonID: String
     @EnvironmentObject private var store: LiveLibraryStore
     @Environment(\.scenePhase) private var scenePhase
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @StateObject private var speech = SpeechPlayer()
     @State private var lesson: MobileLesson?
+    @State private var document = ReadingDocument(paragraphs: [])
     @State private var isLoading = true
     @State private var failure: String?
     @State private var reloadID = UUID()
     @State private var activeLoadID = UUID()
     @State private var showTranslations = false
+    @State private var selectionMode = false
     @State private var selection: PassageSelection?
-    @State private var selectedMedia: MobileMedia?
-    @State private var speechRequest: ReaderSpeechRequest?
+    @State private var selectedMediaID = ""
+    @State private var mediaPauseRequest = UUID()
+    @State private var readingPosition = 0
+    @State private var scrollRequest: ReaderScrollRequest?
     @State private var saveError: String?
 
     var body: some View {
@@ -41,14 +44,16 @@ struct LiveReaderView: View {
         .navigationTitle(lesson?.title ?? "Lesson")
         .navigationBarTitleDisplayMode(.inline)
         .task(id: "\(lessonID)|\(reloadID)") { await load() }
-        .task(id: speechRequest?.id) {
-            // The selected media is removed from this view before device speech begins.
-            guard let request = speechRequest, selection == nil, selectedMedia == nil else { return }
-            speech.speak(request.text, language: request.languageCode)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if let lesson, !document.text.isEmpty, !isLoading {
+                readerBar(lesson)
+            }
         }
         .sheet(item: $selection) { selected in
             if let lesson {
                 SelectionInsightSheet(selection: selected, lesson: lesson)
+                    .presentationDetents([.medium, .large])
+                    .presentationDragIndicator(.visible)
             }
         }
         .alert("Reading place", isPresented: Binding(
@@ -59,41 +64,53 @@ struct LiveReaderView: View {
         } message: {
             Text(saveError ?? "")
         }
-        .onDisappear { stopPlayback() }
+        .onDisappear { pausePlayback() }
         .onChange(of: scenePhase) { _, phase in
-            if phase != .active { stopPlayback() }
+            if phase != .active { pausePlayback() }
         }
     }
 
     private func reader(_ lesson: MobileLesson) -> some View {
-        ScrollViewReader { proxy in
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 24) {
-                    header(lesson, proxy: proxy)
-                    if !lesson.media.isEmpty { mediaControls(lesson) }
+        ScrollView {
+            // A single text surface allows a selection to cross paragraph boundaries.
+            VStack(alignment: .leading, spacing: 28) {
+                header(lesson)
+                if !lesson.media.isEmpty { mediaControls(lesson) }
 
-                    if lesson.paragraphs.isEmpty {
-                        ContentUnavailableView("Lesson resources", systemImage: "doc.text",
-                                               description: Text("This lesson has no reading passages. Open its available resources below."))
-                    } else {
-                        ForEach(Array(lesson.paragraphs.enumerated()), id: \.element.id) { index, paragraph in
-                            passage(paragraph, index: index, lesson: lesson)
-                                .id(paragraph.id)
-                        }
-                    }
-
-                    if !lesson.vocabulary.isEmpty { glossary(lesson) }
-                    resources(lesson)
+                if document.text.isEmpty {
+                    ContentUnavailableView("Lesson resources", systemImage: "doc.text",
+                                           description: Text("Open this lesson’s available resources below."))
+                } else {
+                    SelectablePassage(
+                        text: document.text,
+                        highlights: store.words.filter { $0.languageCode == lesson.languageCode }.map(\.term),
+                        selectionMode: selectionMode,
+                        languageCode: lesson.languageCode,
+                        scrollRequest: scrollRequest,
+                        onReadingOffsetChange: { offset in
+                            if let position = document.paragraphIndex(atUTF16Offset: offset), position != readingPosition {
+                                readingPosition = position
+                            }
+                        },
+                        onSelect: openSelection
+                    )
                 }
-                .frame(maxWidth: 760, alignment: .leading)
-                .padding(20)
-                .frame(maxWidth: .infinity)
+
+                if showTranslations { translations(lesson) }
+                if !lesson.vocabulary.isEmpty {
+                    DisclosureGroup("Lesson vocabulary") { glossary(lesson).padding(.top, 14) }
+                }
+                resources(lesson)
             }
+            .frame(maxWidth: 760, alignment: .leading)
+            .padding(.horizontal, 24)
+            .padding(.vertical, 24)
+            .frame(maxWidth: .infinity)
         }
     }
 
-    private func header(_ lesson: MobileLesson, proxy: ScrollViewProxy) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
+    private func header(_ lesson: MobileLesson) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
             Eyebrow(text: lesson.languageName)
             Text(lesson.title)
                 .font(.largeTitle.weight(.semibold))
@@ -102,141 +119,134 @@ struct LiveReaderView: View {
                 Text(lesson.subtitle).foregroundStyle(Palette.secondary)
             }
             if let channel = lesson.channel, !channel.isEmpty {
-                Label(channel, systemImage: "person.crop.rectangle")
-                    .font(.subheadline)
-                    .foregroundStyle(Palette.secondary)
+                Text(channel).font(.subheadline).foregroundStyle(Palette.secondary)
             }
-            if !lesson.paragraphs.isEmpty {
-                Text("Tap any word to study it. To study a phrase, press and hold, adjust the selection handles, then choose Explain selection.")
-                    .font(.subheadline)
-                    .foregroundStyle(Palette.secondary)
-                if lesson.paragraphs.contains(where: { !($0.translation ?? "").isEmpty }) {
-                    Toggle("Show translations", isOn: $showTranslations)
+            if !document.text.isEmpty {
+                Text("Tap a word, or drag across words to explain a phrase. Turn on Select for dragging in any direction.")
+                    .font(.footnote).foregroundStyle(Palette.secondary)
+                if store.positions[lesson.id] != nil {
+                    Button("Resume reading", systemImage: "bookmark.fill") { resume(lesson) }
                         .font(.subheadline)
-                }
-                if let saved = store.positions[lesson.id] {
-                    let position = min(max(0, saved), lesson.paragraphs.count - 1)
-                    Button {
-                        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.25)) {
-                            proxy.scrollTo(lesson.paragraphs[position].id, anchor: .top)
-                        }
-                    } label: {
-                        Label("Resume at passage \(position + 1)", systemImage: "bookmark.fill")
-                    }
-                    .buttonStyle(.bordered)
                 }
             }
         }
     }
 
     private func mediaControls(_ lesson: MobileLesson) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Menu {
-                ForEach(lesson.media) { media in
-                    Button(media.title) {
-                        speech.stop()
-                        speechRequest = nil
-                        selectedMedia = media
-                    }
+        VStack(alignment: .leading, spacing: 12) {
+            // One source is already chosen. Additional tracks remain available only
+            // when a lesson actually contains alternatives.
+            if lesson.media.count > 1 {
+                Picker("Recording", selection: $selectedMediaID) {
+                    ForEach(lesson.media) { media in Text(media.title).tag(media.id) }
                 }
-            } label: {
-                Label(selectedMedia == nil ? "Choose a recording" : "Change recording", systemImage: "play.rectangle")
-                    .frame(minHeight: 44)
+                .pickerStyle(.menu)
+                .onChange(of: selectedMediaID) { _, _ in speech.stop() }
             }
-            if let media = selectedMedia, selection == nil {
-                LessonMediaPlayer(media: media)
+            if let media = lesson.media.first(where: { $0.id == selectedMediaID }) ?? lesson.media.first {
+                LessonMediaPlayer(media: media, showsTitle: false, pauseRequest: mediaPauseRequest,
+                                  onPlaybackStarted: { speech.stop() })
                     .id(media.id)
-                Button("Close player", systemImage: "xmark.circle") { selectedMedia = nil }
-                    .font(.subheadline)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .studyCard()
     }
 
-    private func passage(_ paragraph: MobileParagraph, index: Int, lesson: MobileLesson) -> some View {
-        VStack(alignment: .leading, spacing: 18) {
-            Text("Passage \(index + 1)")
-                .font(.caption.monospaced())
-                .foregroundStyle(Palette.secondary)
-            SelectablePassage(
-                text: paragraph.text,
-                highlights: store.words.filter { $0.languageCode == lesson.languageCode }.map(\.term),
-                onSelect: openSelection
-            )
-            if showTranslations, let translation = paragraph.translation, !translation.isEmpty {
-                Text(translation)
-                    .font(.body)
-                    .foregroundStyle(Palette.secondary)
-                    .textSelection(.enabled)
-                    .padding(.top, 4)
+    private func readerBar(_ lesson: MobileLesson) -> some View {
+        VStack(spacing: 6) {
+            if selectionMode {
+                Text("Drag across words. Lift your finger for the explanation.")
+                    .font(.caption).foregroundStyle(Palette.secondary)
+                    .accessibilityLabel("Select mode is on. Drag in any direction to select words.")
             }
-
-            ViewThatFits(in: .horizontal) {
-                HStack(spacing: 16) {
-                    speechButton(paragraph, languageCode: lesson.languageCode)
-                    Spacer(minLength: 0)
-                    placeButton(index: index, lessonID: lesson.id)
+            HStack(spacing: 14) {
+                Button {
+                    selectionMode.toggle()
+                } label: {
+                    Label("Select", systemImage: selectionMode ? "hand.draw.fill" : "hand.draw")
+                        .fontWeight(selectionMode ? .semibold : .regular)
+                        .padding(.horizontal, 10)
+                        .frame(minHeight: 44)
+                        .background(selectionMode ? Palette.field : Color.clear,
+                                    in: RoundedRectangle(cornerRadius: 10))
                 }
-                VStack(alignment: .leading, spacing: 10) {
-                    speechButton(paragraph, languageCode: lesson.languageCode)
-                    placeButton(index: index, lessonID: lesson.id)
+                .accessibilityValue(selectionMode ? "On" : "Off")
+                .accessibilityHint("Enables phrase selection with vertical as well as horizontal drags")
+                Spacer(minLength: 0)
+                Button {
+                    readCurrentParagraph(lesson)
+                } label: {
+                    Label(speech.isSpeaking ? "Stop" : "Listen",
+                          systemImage: speech.isSpeaking ? "stop.fill" : "speaker.wave.2")
+                        .frame(minHeight: 44)
                 }
+                .accessibilityHint("Reads the paragraph currently at the top of the reader using the device voice")
+                Spacer(minLength: 0)
+                Menu {
+                    Button("Save my place", systemImage: "bookmark") { savePlace(lesson) }
+                        .disabled(store.isSaving || lesson.paragraphs.isEmpty)
+                    if store.positions[lesson.id] != nil {
+                        Button("Resume saved place", systemImage: "bookmark.fill") { resume(lesson) }
+                    }
+                    if lesson.paragraphs.contains(where: { !($0.translation ?? "").isEmpty }) {
+                        Toggle("Show translations", isOn: $showTranslations)
+                    }
+                } label: {
+                    Image(systemName: store.isSaving ? "hourglass" : "ellipsis.circle")
+                        .font(.title3).frame(minWidth: 44, minHeight: 44)
+                }
+                .accessibilityLabel("Reader options")
             }
             .font(.subheadline)
-
-            if speechRequest?.paragraphID == paragraph.id, let notice = speech.notice {
-                Text(notice).font(.footnote).foregroundStyle(Palette.secondary)
+            if let notice = speech.notice {
+                Text(notice).font(.caption).foregroundStyle(Palette.secondary)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .studyCard()
+        .padding(.horizontal, 20)
+        .padding(.vertical, 6)
+        .background(.regularMaterial)
     }
 
-    private func speechButton(_ paragraph: MobileParagraph, languageCode: String) -> some View {
-        let isSpeaking = speech.isSpeaking && speechRequest?.paragraphID == paragraph.id
-        return Button {
-            if isSpeaking {
-                speech.stop()
-                speechRequest = nil
-            } else {
-                speech.stop()
-                selectedMedia = nil
-                speechRequest = ReaderSpeechRequest(paragraphID: paragraph.id, text: paragraph.text,
-                                                    languageCode: languageCode)
-            }
-        } label: {
-            Label(isSpeaking ? "Stop voice" : "Device voice",
-                  systemImage: isSpeaking ? "stop.fill" : "speaker.wave.2")
-                .frame(minHeight: 44)
-        }
-        .accessibilityLabel(isSpeaking ? "Stop reading this passage" : "Read this passage with the device voice")
+    private func readCurrentParagraph(_ lesson: MobileLesson) {
+        if speech.isSpeaking { speech.stop(); return }
+        guard !lesson.paragraphs.isEmpty else { return }
+        mediaPauseRequest = UUID()
+        let position = min(max(0, readingPosition), lesson.paragraphs.count - 1)
+        speech.speak(lesson.paragraphs[position].text, language: lesson.languageCode)
     }
 
-    private func placeButton(index: Int, lessonID: String) -> some View {
-        let saved = store.positions[lessonID] == index
-        return Button {
-            Task {
-                await store.recordPosition(lessonID: lessonID, position: index)
-                if store.positions[lessonID] != index {
-                    saveError = store.notice ?? "Your reading place couldn’t be saved. Please try again."
-                }
-            }
-        } label: {
-            Label(saved ? "Place saved" : "Save my place", systemImage: saved ? "bookmark.fill" : "bookmark")
-                .frame(minHeight: 44)
+    private func savePlace(_ lesson: MobileLesson) {
+        let position = min(max(0, readingPosition), max(0, lesson.paragraphs.count - 1))
+        Task {
+            await store.recordPosition(lessonID: lessonID, position: position)
+            saveError = store.positions[lessonID] == position
+                ? "Your reading place is saved."
+                : (store.notice ?? "Your reading place couldn’t be saved. Please try again.")
         }
-        .disabled(store.isSaving || saved)
+    }
+
+    private func resume(_ lesson: MobileLesson) {
+        guard let saved = store.positions[lesson.id], !document.paragraphRanges.isEmpty else { return }
+        let position = min(max(0, saved), document.paragraphRanges.count - 1)
+        scrollRequest = ReaderScrollRequest(utf16Offset: document.paragraphRanges[position].location)
+    }
+
+    @ViewBuilder private func translations(_ lesson: MobileLesson) -> some View {
+        let available = lesson.paragraphs.compactMap(\.translation).filter { !$0.isEmpty }
+        if !available.isEmpty {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Translation").font(.headline)
+                Text(available.joined(separator: "\n\n"))
+                    .foregroundStyle(Palette.secondary).textSelection(.enabled)
+            }
+        }
     }
 
     private func glossary(_ lesson: MobileLesson) -> some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Lesson vocabulary").font(.title2.weight(.semibold)).accessibilityAddTraits(.isHeader)
             ForEach(Array(lesson.vocabulary.enumerated()), id: \.offset) { _, word in
                 Button {
-                    if let paragraph = lesson.paragraphs.first(where: { $0.text.range(of: word.term, options: .caseInsensitive) != nil }),
-                       let range = paragraph.text.range(of: word.term, options: .caseInsensitive),
-                       let selected = PassageSelection(context: paragraph.text, range: NSRange(range, in: paragraph.text)) {
+                    if let range = document.text.range(of: word.term, options: .caseInsensitive),
+                       let selected = PassageSelection(context: document.text, range: NSRange(range, in: document.text)) {
                         openSelection(selected)
                     } else if let selected = PassageSelection(context: word.term,
                                                               range: NSRange(location: 0, length: word.term.utf16.count)) {
@@ -256,12 +266,9 @@ struct LiveReaderView: View {
                 .buttonStyle(.plain)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .studyCard()
     }
 
-    @ViewBuilder
-    private func resources(_ lesson: MobileLesson) -> some View {
+    @ViewBuilder private func resources(_ lesson: MobileLesson) -> some View {
         let available = lesson.resources.compactMap { resource -> ReaderResource? in
             guard let parts = URLComponents(string: resource.url), parts.scheme?.lowercased() == "https",
                   let host = parts.host, !host.isEmpty, parts.user == nil, parts.password == nil,
@@ -270,7 +277,7 @@ struct LiveReaderView: View {
         }
         if !available.isEmpty {
             VStack(alignment: .leading, spacing: 16) {
-                Text("Resources").font(.title2.weight(.semibold)).accessibilityAddTraits(.isHeader)
+                Text("Resources").font(.headline)
                 ForEach(available) { resource in
                     Link(destination: resource.url) {
                         Label(resource.title, systemImage: "arrow.up.right.square")
@@ -279,19 +286,17 @@ struct LiveReaderView: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .studyCard()
         }
     }
 
     private func openSelection(_ selected: PassageSelection) {
-        stopPlayback()
+        pausePlayback()
         selection = selected
     }
 
-    private func stopPlayback() {
+    private func pausePlayback() {
         speech.stop()
-        speechRequest = nil
-        selectedMedia = nil
+        mediaPauseRequest = UUID()
     }
 
     private func load() async {
@@ -300,23 +305,21 @@ struct LiveReaderView: View {
         isLoading = true
         failure = nil
         lesson = nil
-        stopPlayback()
+        document = ReadingDocument(paragraphs: [])
+        readingPosition = 0
+        scrollRequest = nil
+        pausePlayback()
         defer { if activeLoadID == requestID { isLoading = false } }
         do {
             let loaded = try await store.loadLesson(lessonID)
             try Task.checkCancellation()
             guard activeLoadID == requestID else { return }
+            document = ReadingDocument(paragraphs: loaded.paragraphs)
+            selectedMediaID = loaded.media.first?.id ?? ""
             lesson = loaded
         } catch is CancellationError { return }
         catch { if activeLoadID == requestID { failure = error.localizedDescription } }
     }
-}
-
-private struct ReaderSpeechRequest: Identifiable {
-    let id = UUID()
-    let paragraphID: String
-    let text: String
-    let languageCode: String
 }
 
 private struct ReaderResource: Identifiable {

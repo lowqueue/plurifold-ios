@@ -12,22 +12,8 @@ struct LiveLibraryView: View {
             .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
     }
 
-    private var filteredCourses: [MobileCourse] {
-        let query = search.trimmingCharacters(in: .whitespacesAndNewlines)
-        return store.courses.compactMap { course in
-            guard language.isEmpty || course.languageCode == language else { return nil }
-            let courseMatches = query.isEmpty || course.title.localizedStandardContains(query)
-                || course.languageName.localizedStandardContains(query)
-            let lessons = course.lessons.filter { lesson in
-                courseMatches || lesson.title.localizedStandardContains(query)
-                    || lesson.subtitle.localizedStandardContains(query)
-                    || (lesson.channel?.localizedStandardContains(query) ?? false)
-                    || (lesson.dialect?.localizedStandardContains(query) ?? false)
-            }
-            guard !lessons.isEmpty else { return nil }
-            return MobileCourse(id: course.id, title: course.title, languageCode: course.languageCode,
-                                languageName: course.languageName, lessons: lessons)
-        }
+    private var index: MobileLibraryIndex {
+        MobileLibraryIndex(courses: store.courses, search: search, languageCode: language)
     }
 
     var body: some View {
@@ -35,14 +21,8 @@ struct LiveLibraryView: View {
             List {
                 if let notice = store.notice {
                     Section {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Label(notice, systemImage: "exclamationmark.circle")
-                                .font(.subheadline)
-                                .foregroundStyle(Palette.secondary)
-                            Button("Try again") { Task { await store.refresh() } }
-                                .disabled(store.isLoading)
-                        }
-                        .listRowBackground(Palette.surface)
+                        LibraryNoticeRow(notice: notice)
+                            .listRowBackground(Palette.surface)
                     }
                 }
 
@@ -78,32 +58,55 @@ struct LiveLibraryView: View {
                         }
                         .listRowBackground(Color.clear)
                     }
-                } else if filteredCourses.isEmpty {
+                } else if index.isEmpty {
                     Section {
-                        ContentUnavailableView("No matching lessons", systemImage: "magnifyingglass",
+                        ContentUnavailableView("No matching content", systemImage: "magnifyingglass",
                                                description: Text("Try another language or search term."))
                             .listRowBackground(Color.clear)
                     }
                 } else {
-                    ForEach(filteredCourses) { course in
+                    if !index.courseFolders.isEmpty {
                         Section {
-                            ForEach(course.lessons) { lesson in
+                            ForEach(index.courseFolders) { folder in
                                 NavigationLink {
-                                    LiveReaderView(lessonID: lesson.id)
+                                    LiveCourseView(courseID: folder.id, initialSearch: search)
                                 } label: {
-                                    lessonRow(lesson)
+                                    courseRow(folder)
                                 }
                                 .listRowBackground(Palette.surface)
                             }
                         } header: {
-                            VStack(alignment: .leading, spacing: 5) {
-                                Text(course.languageName).font(.caption.monospaced())
-                                Text(course.title).font(.headline)
+                            categoryHeader("Courses", subtitle: "Foundations and guided study", icon: "folder")
+                        }
+                    }
+
+                    if !index.lessonGroups.isEmpty {
+                        Section {
+                            ForEach(index.lessonGroups) { group in
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(group.title).font(.headline)
+                                    if language.isEmpty {
+                                        Text(group.languageName).font(.caption)
+                                    }
+                                }
+                                .foregroundStyle(Palette.secondary)
+                                .padding(.top, 12)
+                                .padding(.bottom, 3)
+                                .accessibilityAddTraits(.isHeader)
+                                .listRowSeparator(.hidden)
+                                .listRowBackground(Color.clear)
+
+                                ForEach(group.lessons) { lesson in
+                                    NavigationLink {
+                                        LiveReaderView(lessonID: lesson.id)
+                                    } label: {
+                                        LibraryLessonRow(lesson: lesson, hasPosition: store.positions[lesson.id] != nil)
+                                    }
+                                    .listRowBackground(Palette.surface)
+                                }
                             }
-                            .textCase(nil)
-                            .foregroundStyle(Palette.secondary)
-                            .padding(.top, 12)
-                            .padding(.bottom, 4)
+                        } header: {
+                            categoryHeader("Lessons", subtitle: "Videos, audio, and reading", icon: "play.rectangle")
                         }
                     }
                 }
@@ -122,7 +125,55 @@ struct LiveLibraryView: View {
         }
     }
 
-    private func lessonRow(_ lesson: MobileLessonSummary) -> some View {
+    private func categoryHeader(_ title: String, subtitle: String, icon: String) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Label(title, systemImage: icon)
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(Palette.ink)
+            Text(subtitle).font(.caption).foregroundStyle(Palette.secondary)
+        }
+        .textCase(nil)
+        .padding(.top, 10)
+        .padding(.bottom, 6)
+    }
+
+    private func courseRow(_ folder: MobileCourseFolder) -> some View {
+        HStack(alignment: .center, spacing: 16) {
+            Image(systemName: "folder.fill")
+                .font(.title2)
+                .foregroundStyle(Palette.ink)
+                .frame(width: 36)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 6) {
+                Text(folder.course.title)
+                    .font(.headline)
+                    .foregroundStyle(Palette.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(folder.course.languageName)
+                    .font(.subheadline)
+                    .foregroundStyle(Palette.secondary)
+                if folder.chapters.count == folder.course.lessons.count {
+                    Text("\(folder.chapters.count) \(folder.chapters.count == 1 ? "chapter" : "chapters")")
+                        .font(.caption)
+                        .foregroundStyle(Palette.secondary)
+                } else {
+                    Text("\(folder.chapters.count) of \(folder.course.lessons.count) chapters match")
+                        .font(.caption)
+                        .foregroundStyle(Palette.secondary)
+                }
+            }
+        }
+        .padding(.vertical, 12)
+        .accessibilityElement(children: .combine)
+        .accessibilityHint("Opens the chapters in this course")
+    }
+}
+
+struct LibraryLessonRow: View {
+    let lesson: MobileLessonSummary
+    let hasPosition: Bool
+
+    var body: some View {
         VStack(alignment: .leading, spacing: 7) {
             Text(lesson.title)
                 .font(.headline)
@@ -132,18 +183,13 @@ struct LiveLibraryView: View {
                 Text(lesson.subtitle)
                     .font(.subheadline)
                     .foregroundStyle(Palette.secondary)
-                    .lineLimit(3)
-            }
-            if let channel = lesson.channel, !channel.isEmpty {
-                Label(channel, systemImage: "person.crop.rectangle")
-                    .font(.caption)
-                    .foregroundStyle(Palette.secondary)
+                    .lineLimit(2)
             }
             HStack(spacing: 12) {
                 if lesson.paragraphCount > 0 {
                     Text("\(lesson.paragraphCount) \(lesson.paragraphCount == 1 ? "passage" : "passages")")
                 }
-                if store.positions[lesson.id] != nil {
+                if hasPosition {
                     Label("Continue reading", systemImage: "bookmark.fill")
                 }
             }
@@ -151,5 +197,20 @@ struct LiveLibraryView: View {
             .foregroundStyle(Palette.secondary)
         }
         .padding(.vertical, 8)
+    }
+}
+
+struct LibraryNoticeRow: View {
+    @EnvironmentObject private var store: LiveLibraryStore
+    let notice: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Label(notice, systemImage: "exclamationmark.circle")
+                .font(.subheadline)
+                .foregroundStyle(Palette.secondary)
+            Button("Try again") { Task { await store.refresh() } }
+                .disabled(store.isLoading)
+        }
     }
 }
