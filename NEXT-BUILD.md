@@ -2,6 +2,8 @@
 
 Your signing setup already works. Use the existing GitHub repository, Codemagic application, and TestFlight group.
 
+**Latest correction:** the text container now specifies its CGFloat type explicitly, fixing the compile error in the latest log. If the preceding player/selection package is already in GitHub, only replace `Plurifold/Views/SelectablePassage.swift` from this ZIP, commit **Fix text container numeric type**, and run **Plurifold - TestFlight** again. The full-source upload steps below also work.
+
 This revision adds a separate player panel, following transcripts, fixed sentence study, visible word markers, hold-and-drag selection without a Select toggle, and tap-away clearing. Download the ZIP again, commit all extracted files, and start a new build. The website and existing signing setup need no changes for this update.
 
 ## 1. Extract the full source ZIP

@@ -2,6 +2,12 @@
 
 Updated on 2026-09-07. The development workspace runs Linux and has no Xcode or native iOS simulator. Historical build results and current source checks are separated below.
 
+## Latest Codemagic compile correction
+
+The supplied `test_sign_in_and_text_selection(1).log` reports one blocking compiler error at `SelectablePassage.swift:646`: `CGSize(width: 0, height: .greatestFiniteMagnitude)` is ambiguous between CGFloat and Double. The three failed build commands listed at the end are consequences of that same error. XCTest was cancelled before execution; this log contains no runtime crash or test result.
+
+Both text-sizing expressions now specify `CGFloat.greatestFiniteMagnitude`. Only `Plurifold/Views/SelectablePassage.swift` changes executable source. Its Swift grammar and the patch's whitespace were checked, but the corrected source must still compile and run the 43 tests in Codemagic. The unrelated traitCollectionDidChange deprecation warning remains non-blocking. No tests or build gates were removed.
+
 ## Current player and selection revision
 
 The supplied LingQ recording shows a transcript-first reader, a player panel sliding up from the bottom, following text, and a separate sentence study view. The supplied Plurifold recording shows a persistent selection after dismissing its explanation and little visual distinction between active and vocabulary highlights. There are no touch indicators, so exact input latency or hold duration cannot be measured from these recordings.
