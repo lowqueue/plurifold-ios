@@ -4,6 +4,17 @@
 	classes = {};
 	objectVersion = 56;
 	objects = {
+		8C08A5ADDD248587ADD3C470 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			name = AudioSessionCoordinator.swift;
+			path = Plurifold/App/AudioSessionCoordinator.swift;
+			sourceTree = SOURCE_ROOT;
+		};
+		064F4F85BBCA5BFBAD73D552 = {
+			isa = PBXBuildFile;
+			fileRef = 8C08A5ADDD248587ADD3C470;
+		};
 		91D3016F519CF3CC3A4036A1 = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -25,6 +36,17 @@
 		F197E690FA9B9CA7CA0CD842 = {
 			isa = PBXBuildFile;
 			fileRef = 398BC9AAAA4AE036C54B4E26;
+		};
+		65CECF22CA27676898E2093C = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			name = LiveLibrary.swift;
+			path = Plurifold/Models/LiveLibrary.swift;
+			sourceTree = SOURCE_ROOT;
+		};
+		652A0B32870875637629454C = {
+			isa = PBXBuildFile;
+			fileRef = 65CECF22CA27676898E2093C;
 		};
 		45FDF515BE2FBDD1DA7F1820 = {
 			isa = PBXFileReference;
@@ -48,6 +70,39 @@
 			isa = PBXBuildFile;
 			fileRef = 04EF4073610BF239A5FE9CCD;
 		};
+		8F0C391B8A9BBAEA1293B623 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			name = NativeSession.swift;
+			path = Plurifold/Networking/NativeSession.swift;
+			sourceTree = SOURCE_ROOT;
+		};
+		EA26215B2CBBB6E4A0843930 = {
+			isa = PBXBuildFile;
+			fileRef = 8F0C391B8A9BBAEA1293B623;
+		};
+		27B800BF2A67A1979D115795 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			name = PlurifoldAPI.swift;
+			path = Plurifold/Networking/PlurifoldAPI.swift;
+			sourceTree = SOURCE_ROOT;
+		};
+		38D2436C76464B6888E6D73A = {
+			isa = PBXBuildFile;
+			fileRef = 27B800BF2A67A1979D115795;
+		};
+		67E282A4ADCD2A1325542B48 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			name = LessonMediaPlayer.swift;
+			path = Plurifold/Views/LessonMediaPlayer.swift;
+			sourceTree = SOURCE_ROOT;
+		};
+		1189CD96FECD08F49A6AABEA = {
+			isa = PBXBuildFile;
+			fileRef = 67E282A4ADCD2A1325542B48;
+		};
 		28695C701D4556AE7F77EA26 = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -58,6 +113,39 @@
 		925FBE29E4DACFD93A142C87 = {
 			isa = PBXBuildFile;
 			fileRef = 28695C701D4556AE7F77EA26;
+		};
+		551CA7DC3E8BCF66A500A7C1 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			name = LiveLibraryView.swift;
+			path = Plurifold/Views/LiveLibraryView.swift;
+			sourceTree = SOURCE_ROOT;
+		};
+		205BD47E7B7D8A2EF076AD3C = {
+			isa = PBXBuildFile;
+			fileRef = 551CA7DC3E8BCF66A500A7C1;
+		};
+		68F685F65E630A1AD48AC010 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			name = LiveReaderView.swift;
+			path = Plurifold/Views/LiveReaderView.swift;
+			sourceTree = SOURCE_ROOT;
+		};
+		8F0F30D428935EC2B449FE6A = {
+			isa = PBXBuildFile;
+			fileRef = 68F685F65E630A1AD48AC010;
+		};
+		CB83AE2569A2E8514406BD32 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			name = LiveWordsView.swift;
+			path = Plurifold/Views/LiveWordsView.swift;
+			sourceTree = SOURCE_ROOT;
+		};
+		E1C965005A51C44B9BAC63C3 = {
+			isa = PBXBuildFile;
+			fileRef = CB83AE2569A2E8514406BD32;
 		};
 		74BA000BB8654EDBD9234CB5 = {
 			isa = PBXFileReference;
@@ -91,6 +179,39 @@
 		C8D5E789B0EAA4C9DAD54F1F = {
 			isa = PBXBuildFile;
 			fileRef = 94B76FF09A0E87A3AA6A566D;
+		};
+		6ED438A287D1A257E821DDEF = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			name = SelectablePassage.swift;
+			path = Plurifold/Views/SelectablePassage.swift;
+			sourceTree = SOURCE_ROOT;
+		};
+		7DAED73717D5268D9F69C61B = {
+			isa = PBXBuildFile;
+			fileRef = 6ED438A287D1A257E821DDEF;
+		};
+		32B9269786FD6312633ADD2C = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			name = SelectionInsightSheet.swift;
+			path = Plurifold/Views/SelectionInsightSheet.swift;
+			sourceTree = SOURCE_ROOT;
+		};
+		755638EA3B255CE6699E85C1 = {
+			isa = PBXBuildFile;
+			fileRef = 32B9269786FD6312633ADD2C;
+		};
+		37B982ABA9965D7F0D443853 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			name = SignInView.swift;
+			path = Plurifold/Views/SignInView.swift;
+			sourceTree = SOURCE_ROOT;
+		};
+		47109B9DAE50B344A675BF3A = {
+			isa = PBXBuildFile;
+			fileRef = 37B982ABA9965D7F0D443853;
 		};
 		5C27279515916A0EF6D55024 = {
 			isa = PBXFileReference;
@@ -147,6 +268,28 @@
 			isa = PBXBuildFile;
 			fileRef = C5ADB574442B4FC237C5578E;
 		};
+		F6EF041952115A4BBD5BCABB = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			name = NativeSessionTests.swift;
+			path = PlurifoldTests/NativeSessionTests.swift;
+			sourceTree = SOURCE_ROOT;
+		};
+		F562DE94BB7A2DA290597243 = {
+			isa = PBXBuildFile;
+			fileRef = F6EF041952115A4BBD5BCABB;
+		};
+		2CAAD1237BE18426D8F28DD2 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			name = PassageSelectionTests.swift;
+			path = PlurifoldTests/PassageSelectionTests.swift;
+			sourceTree = SOURCE_ROOT;
+		};
+		0F72CEBFF839F4875FFB6B41 = {
+			isa = PBXBuildFile;
+			fileRef = 2CAAD1237BE18426D8F28DD2;
+		};
 		AEB66B25AAAAAE17E5207641 = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -175,14 +318,25 @@
 		085ED06E573690BA3A56BC1E = {
 			isa = PBXGroup;
 			children = (
+				8C08A5ADDD248587ADD3C470,
 				91D3016F519CF3CC3A4036A1,
 				398BC9AAAA4AE036C54B4E26,
+				65CECF22CA27676898E2093C,
 				45FDF515BE2FBDD1DA7F1820,
 				04EF4073610BF239A5FE9CCD,
+				8F0C391B8A9BBAEA1293B623,
+				27B800BF2A67A1979D115795,
+				67E282A4ADCD2A1325542B48,
 				28695C701D4556AE7F77EA26,
+				551CA7DC3E8BCF66A500A7C1,
+				68F685F65E630A1AD48AC010,
+				CB83AE2569A2E8514406BD32,
 				74BA000BB8654EDBD9234CB5,
 				A496D34654A89E2D75E0C8E8,
 				94B76FF09A0E87A3AA6A566D,
+				6ED438A287D1A257E821DDEF,
+				32B9269786FD6312633ADD2C,
+				37B982ABA9965D7F0D443853,
 				5C27279515916A0EF6D55024,
 				EB736CFFA0B82792D7C2658E,
 				9FC0AD6CBACCF4848DDC01A8,
@@ -195,6 +349,8 @@
 		D60409337774CCE94860379A = {
 			isa = PBXGroup;
 			children = (
+				F6EF041952115A4BBD5BCABB,
+				2CAAD1237BE18426D8F28DD2,
 				AEB66B25AAAAAE17E5207641,
 			);
 			name = PlurifoldTests;
@@ -222,14 +378,25 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				064F4F85BBCA5BFBAD73D552,
 				73FEF8B1AC743D430673C4C6,
 				F197E690FA9B9CA7CA0CD842,
+				652A0B32870875637629454C,
 				942F1C1BB79653E18F634AA6,
 				801E2D711DD13164ED25902E,
+				EA26215B2CBBB6E4A0843930,
+				38D2436C76464B6888E6D73A,
+				1189CD96FECD08F49A6AABEA,
 				925FBE29E4DACFD93A142C87,
+				205BD47E7B7D8A2EF076AD3C,
+				8F0F30D428935EC2B449FE6A,
+				E1C965005A51C44B9BAC63C3,
 				50F9201B28DF0EE4A22F8C73,
 				842F52A8E5ECFA0C28985415,
 				C8D5E789B0EAA4C9DAD54F1F,
+				7DAED73717D5268D9F69C61B,
+				755638EA3B255CE6699E85C1,
+				47109B9DAE50B344A675BF3A,
 				762E183886E467C74CEB4DA9,
 				85AAF029264BBF1D4BC9F171,
 			);
@@ -255,6 +422,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F562DE94BB7A2DA290597243,
+				0F72CEBFF839F4875FFB6B41,
 				0FB00C0B29D9AE6685ACF9F0,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

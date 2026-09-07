@@ -1,35 +1,59 @@
 # Validation record
 
-Updated on 2026-09-07. Local checks use a Linux workspace; the simulator build below ran on Codemagic's Mac mini M2.
+Updated on 2026-09-07. The development workspace runs Linux and has no Xcode or native iOS simulator. Historical build results and current source checks are separated below.
 
-## Completed checks
+## Current live-account update
 
-- Parsed all 11 Swift source files with the tree-sitter Swift grammar: no syntax errors reported. This does not type-check Apple frameworks.
-- Regenerated the original Xcode project and verified its 52 internal project object references and referenced source/resource files.
-- Parsed the shared Xcode scheme as XML and the privacy manifest as a property list.
-- Checked the bundled JSON catalog: 1 collection, 2 lessons, 12 passages, 24 vocabulary entries, 6 questions. IDs are unique, answer indexes are valid, and each vocabulary expression occurs in its lesson.
-- Compared all six original Bologna story sentences against the existing website source; they match.
-- Performed an independent source review and corrected attributed-text mutation, navigation destination stability, audio interruption handling, empty-question validation, stale speech errors, and repeated quiz advancement.
+Completed checks for the prepared update:
 
-## Confirmed simulator build
+- All 24 Swift files, including the three test files, parsed with the tree-sitter Swift grammar without syntax errors. This is grammar validation, not Swift typechecking or Apple-framework compilation.
+- The Codemagic YAML passed the official schema check. Its shell scripts passed Bash syntax checks.
+- The Xcode project was regenerated and source/resource membership checked, including the new networking, live reader, selection, audio, and test files.
+- The companion web integration suite passed all 34 tests for mobile content, study synchronization, and the shared lesson library. The six mobile integration tests also passed again after the final validation fixes.
+- The native session and API code were reviewed for refresh serialization, rejected credentials, temporary network failures, stale results after sign-out, and signing back into the same account.
+- The reader selection code was checked for valid UTF-16 boundaries and explicit phrase lookup. Media and speech lifecycle review identified shared audio-session ownership and was followed by an audio coordinator update.
+- `git diff --check` reported no whitespace errors.
 
-- The user's Codemagic screenshot shows a successful build at `a9e0550`, workflow **Plurifold - first simulator build**, build index 1, on a Mac mini M2.
-- Build ID: `6a9ee25b7dc162e48e3dff37`. Total duration: 1 minute 38 seconds. Output: `Plurifold-simulator.zip`, 894.15 KB.
-- This confirms compilation and simulator packaging for that commit. It does not confirm app launch, rendering, XCTest results, physical-device signing, or Apple upload.
+The prepared course catalog contains four course collections with 75 entries. The signed-in library also includes the published and private saved lessons authorized for that account. The matching website update passed its production build and is saved as Plurifold version 84, source commit `d3fbb7fa79f6bd0bcfa66bc96f709e4981457b51`. Its production deployment is pending because automatic approval review requires confirmation in the current conversation. A successful live-account device session is also pending; web integration tests alone do not establish either result.
 
-## Distribution update checks
+## Native test gate still to run
 
-- The new `codemagic.yaml` passes Codemagic's current official JSON schema. Both workflows parse, all four shell scripts pass `bash -n`, and the original simulator workflow's configuration is unchanged.
-- The icon catalog has 18 entries referencing 13 PNG files. Every size matches its asset slot, including the 1024-pixel App Store icon, and every PNG uses RGB without an alpha channel. The vector and rendered icon were visually inspected.
-- The updated project generator validates 54 PBX object references and all source/resource paths, including the asset catalog directory. Regeneration produces identical project bytes.
-- Both Python scripts parse, the shared scheme parses as XML, and the existing privacy manifest parses as a property list.
-- SwiftUI code, models, tests, and lesson content are unchanged from the successful simulator commit.
-- `git diff --check` reports no whitespace errors.
+The source contains 21 XCTest methods: seven authentication/session tests, five word/phrase selection tests, and nine original study-store tests. The new **Plurifold - TestFlight** workflow runs them before signing and uploading the IPA.
 
-## Still to verify on Apple infrastructure
+No native compilation, XCTest execution, simulator launch, or device run of this live-account update has occurred in the Linux workspace. A successful grammar parse does not prove it will compile or behave correctly on iOS.
 
-- A native build of the new icon/distribution configuration, code signing, Apple upload, simulator launch, and physical iPhone/iPad launch.
-- 9 XCTest methods are included but have not run. They cover persistence, invalid data, score bounds, reading state, and reset behavior.
-- Native rendering, Dynamic Type layout, VoiceOver, touch targets, actual system voices, and device audio behavior.
+The next Codemagic run must establish compilation and test results. The next iPhone check must establish real account sign-in, authorized content loading, AI responses, website synchronization, text selection handles, media playback, audio handoff, and persistence across app restarts. Large Dynamic Type sizes, VoiceOver, light/dark appearance, and iPad layout also need Apple-device verification.
 
-Run the **Plurifold - TestFlight** workflow after adding the signing files, then perform the device checks in `README.md`. The original compile result does not establish that the new distribution configuration has passed Apple's validation.
+## Historical original prototype checks
+
+Before the live-account work, the original source passed these checks:
+
+- Eleven Swift files parsed without grammar errors.
+- The original generator verified 52 project object references and source/resource paths.
+- The shared Xcode scheme parsed as XML and the privacy manifest parsed as a property list.
+- The bundled fixture catalog contained one collection, two lessons, twelve passages, twenty-four vocabulary entries, and six questions. IDs, answer indexes, and glossary occurrences were checked.
+- The six original Bologna story sentences matched the website source used for that prototype.
+- Source review covered attributed text, stable navigation destinations, audio interruptions, empty-question validation, stale speech errors, and repeated quiz advancement.
+
+Those bundled lessons remain historical fixtures. They are not the signed-in live library and their local study data is not migrated into an account by this update.
+
+## Historical successful builds and installation
+
+The first Codemagic simulator build succeeded at commit `a9e0550`, using **Plurifold - first simulator build** on a Mac mini M2:
+
+| Item | Result |
+| --- | --- |
+| Build ID | `6a9ee25b7dc162e48e3dff37` |
+| Build index | `1` |
+| Duration | 1 minute 38 seconds |
+| Artifact | `Plurifold-simulator.zip`, 894.15 KB |
+
+That result established compilation and simulator packaging for its own commit, without an XCTest run or simulator launch.
+
+The later signed upload initially failed Apple's icon validation while GitHub still held old project folders. The icon update included 18 catalog entries referencing 13 correctly sized RGB PNG files, including the 1024-pixel App Store icon. The project added the asset catalog to its resources and selected the `AppIcon` set. After the folders reached GitHub, the user confirmed that the TestFlight app worked on the iPhone.
+
+That installation establishes the earlier signing and distribution path. It does not establish compilation, native test results, or device behavior for the new live-account source.
+
+## Next verification
+
+Follow [NEXT-BUILD.md](NEXT-BUILD.md) to commit the full source package and start a new **Plurifold - TestFlight** build. Keep the new build's commit, test results, publishing result, and device observations with this record when they become available.

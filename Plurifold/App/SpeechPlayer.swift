@@ -7,6 +7,7 @@ final class SpeechPlayer: NSObject, ObservableObject, AVSpeechSynthesizerDelegat
     @Published private(set) var isSpeaking = false
     @Published var notice: String?
     private let synthesizer = AVSpeechSynthesizer()
+    private let audioOwnerID = UUID()
     private var currentUtterance: AVSpeechUtterance?
     private var audioObservers: [NSObjectProtocol] = []
 
@@ -28,6 +29,9 @@ final class SpeechPlayer: NSObject, ObservableObject, AVSpeechSynthesizerDelegat
 
     deinit {
         for observer in audioObservers { NotificationCenter.default.removeObserver(observer) }
+        synthesizer.stopSpeaking(at: .immediate)
+        let owner = audioOwnerID
+        Task { @MainActor in AudioSessionCoordinator.shared.release(owner: owner) }
     }
 
     func speak(_ text: String, language: String) {
@@ -38,8 +42,9 @@ final class SpeechPlayer: NSObject, ObservableObject, AVSpeechSynthesizerDelegat
             return
         }
         do {
-            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .spokenAudio, options: .duckOthers)
-            try AVAudioSession.sharedInstance().setActive(true)
+            try AudioSessionCoordinator.shared.acquire(
+                owner: audioOwnerID, mode: .spokenAudio, options: .duckOthers
+            ) { [weak self] in self?.stop() }
         } catch {
             notice = "Audio could not start. Please try again."
             return
@@ -56,7 +61,7 @@ final class SpeechPlayer: NSObject, ObservableObject, AVSpeechSynthesizerDelegat
         currentUtterance = nil
         synthesizer.stopSpeaking(at: .immediate)
         isSpeaking = false
-        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        AudioSessionCoordinator.shared.release(owner: audioOwnerID)
     }
 
     nonisolated func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {

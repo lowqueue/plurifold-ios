@@ -6,6 +6,8 @@ workflows:
     environment:
       xcode: latest
     scripts:
+      - name: Refresh the Xcode project
+        script: python3 scripts/generate_project.py
       - name: Build Plurifold for iOS Simulator
         script: |
           set -euo pipefail
@@ -44,6 +46,10 @@ workflows:
         provisioning_profiles:
           - plurifold-app-store
     scripts:
+      - name: Refresh the Xcode project
+        script: python3 scripts/generate_project.py
+      - name: Test sign-in and text selection
+        script: bash scripts/test_ios.sh
       - name: Configure App Store signing
         script: |
           set -euo pipefail
@@ -68,6 +74,8 @@ workflows:
       - build/ios/ipa/*.ipa
       - build/ios/xcarchive/**/*.dSYM
       - /tmp/xcodebuild_logs/*.log
+      - build/test-results/*.log
+      - build/test-results/*.xcresult
     publishing:
       app_store_connect:
         auth: integration
