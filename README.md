@@ -2,7 +2,7 @@
 
 A native SwiftUI app for the same Plurifold account, lessons, and saved vocabulary you use on the website. Requires iOS 17 or later on iPhone or iPad.
 
-The live app has reached an iPhone through TestFlight. This revision adds language-specific Words and Review, joined phrase highlights with a brief bubble response, a 0.45-second playback sentence hold, and leaner mobile AI explanations. Course folders, continuous paragraphs, the supplied icon, and the Unicode and text-sizing corrections remain included. Run Codemagic to compile and test this revision before installing it.
+The live app has reached an iPhone through TestFlight. This revision adds sourced dictionary definitions, immediate access to your saved desktop meanings, reuse of completed desktop AI lookups, and refresh when the app returns to the foreground. Language-specific Words and Review, reactive phrase selection, and the 0.45-second playback sentence hold remain included. Course folders, continuous paragraphs, the supplied icon, and the Unicode and text-sizing corrections remain included. Run Codemagic to compile and test this revision before installing it.
 
 ## Install this update from Windows
 
@@ -20,7 +20,10 @@ Codemagic runs a finite build job on a cloud Mac. It regenerates the Xcode proje
 - The website's **Blue Hour** light and dark colors, green course accents, gold details, and visible lesson borders. The complete transcript sits in one reading panel with continuous paragraph spacing, without passage cards, numbers, or repeated controls.
 - Tap a word to select it. Hold still for about **0.2 seconds**, then drag in any direction to select a phrase. A light haptic marks the start of dragging and each new word under your finger, including when shortening or reversing the selection. Holding still or crossing blank space produces no repeated ticks. Ordinary swipes scroll; there is no Select mode. Tap **Explain** to request a definition. Tapping blank space, the selected word again, or **Clear selection** removes the active selection. Closing a definition also clears it.
 - Pale blue marks show individual words and gold marks show lesson vocabulary and saved terms. Selected neighbouring words join across spaces into one blue highlight per visual line. The touched word briefly swells and brightens as you drag. Reduce Motion disables the pulse. Clearing restores the separate vocabulary marks without changing text or line wrapping.
-- The authenticated AI services keep definitions and follow-up questions available during free testing. Mobile requests use the server-controlled `mobile-lite` profile: GPT-4.1 nano, shorter instructions and schema, 1,200 UTF-16 units of context, up to two form rows, and the latest two follow-up turns. Definitions have a 650-token output cap and answers 280; the website retains its existing profile and cache. Provider secrets stay on the server. Model quality and latency still need live language testing.
+- **Dictionary** shows English-language Wiktionary senses for individual words, with source-page links, contributor attribution, and CC BY-SA 4.0 licensing. Where Wiktionary supplies a verified form link, the app can also show the dictionary headword (for example, `olen → olema`). Save an individual dictionary meaning without generating AI. Attribution stays in the saved note across devices. Coverage and regional labels vary; a missing entry or unavailable service is shown explicitly.
+- **Your saved definition** appears immediately when the term, language, kind, and variety match a saved account entry. Its original saved context stays separate from the current lesson. Existing saved meanings are not overwritten by a dictionary lookup or new AI answer.
+- Completed AI lookups from desktop can appear as **Earlier AI explanation from your account** when the selection, language, variety, scope, and full normalized context match. A canceled/failed highlight has no completed definition to reuse. Different passages are not treated as the same contextual explanation.
+- Opening details checks the dictionary and earlier explanations concurrently. These checks do not generate new AI. **Explain in this passage** requests AI when you want contextual interpretation, collocations, or additional grammar. The authenticated AI services keep definitions and follow-up questions available during free testing. Mobile requests use the server-controlled `mobile-lite` profile: GPT-4.1 nano, shorter instructions and schema, 1,200 UTF-16 units of context, up to two form rows, and the latest two follow-up turns. Definitions have a 650-token output cap and answers 280; the website retains its existing profile and cache. Provider secrets stay on the server. Model quality and latency still need live language testing.
 - **Review** uses saved words and phrases from the selected language. Reveal meaning, then choose Again to requeue a card or Got it to finish it for the current round. This is session practice; it does not yet store mastery ratings or a spaced-repetition schedule.
 - Saved words and phrases, vocabulary status, and reading places share the website's account data. Changes use narrow update operations so they do not replace unrelated study records.
 - The main reader shows **Watch video** or **Listen to recording**. It opens a large panel from the bottom with playback above the transcript. Press the player's Play control to begin. A recording menu appears only when multiple sources exist; YouTube retains its **Open on YouTube** fallback.
@@ -33,13 +36,13 @@ Codemagic runs a finite build job on a cloud Mac. It regenerates the Xcode proje
 1. Install the new TestFlight build and sign in with your Plurifold email and password.
 2. In **Home**, choose a language using its flag tile. Open a course folder and verify its chapters are inside it. Return to **Lessons** and open a video lesson. Check search, including a chapter title, and return Home to switch languages. Only content in the chosen language should appear.
 3. Check word boundaries and the single reading-panel border in both light and dark appearance. Tap a word, then tap blank space or the panel padding to clear it. Select the word twice to clear it again. Hold for about 0.2 seconds and drag over **in questo video**, including forward, backward, and multiline selections. Watch the selection join across spaces and pulse at the touched word. Feel for one light tick on each new word; holding still should be silent. Enable Reduce Motion and check that selection still works without the pulse. Ordinary swipes should scroll without selecting a phrase.
-4. Select a word or phrase, press **Explain**, ask a follow-up question, and save it. Close the explanation and confirm the active selection is cleared. Check blank-space clearing below a short sentence as well. AI response time still depends on the network and server.
+4. Open details for a saved desktop word and verify its saved meaning appears immediately. For an unsaved word, inspect Dictionary and save a sense without requesting AI. Check its source and license in Words/Review and on desktop. Choose **Explain in this passage**, ask a follow-up question, and save a new term. Close the explanation and confirm the active selection is cleared. Check blank-space clearing below a short sentence as well. AI response time still depends on the network and server.
 5. Open **Watch video**, start playback, and verify the transcript follows timed passages. Scroll manually, then use **Follow audio**. Hold a sentence near a passage transition for about 0.45 seconds: the correct sentence should open, and the player should pause. Study a phrase and return to the player; its position should remain where it paused.
 6. Save the phrase and find it in **Words**, **Review**, and on the website after refreshing. In Review, reveal it, choose Again, then Got it. Switch Home from Italian to Estonian and verify that neither tab shows Italian cards. Scroll into a later paragraph, use **Reader options → Save my place**, leave the lesson, then return and use **Resume reading**.
 7. Check an untimed course recording, multiple-track playback, device-voice Listen, closing the player, and backgrounding the app. Closing the player stops playback; reopening creates a fresh player.
 8. Close and reopen the app to check saved sign-in. In **Account**, sign out and back in. A second account should show its own private lessons and study data.
 
-Use **Account → Refresh library and study data**, or pull to refresh the library, when checking website changes. Synchronization occurs on loading, refresh, and successful saves; it is not a continuous live subscription.
+Use **Account → Refresh library and study data**, or pull to refresh the library, when checking website changes. Synchronization occurs on loading, returning to the foreground, refresh, and successful saves. Foreground refresh waits for native writes to finish. It is not a continuous live subscription.
 
 ## Current scope
 
@@ -58,6 +61,7 @@ Every word can be selected regardless of its vocabulary status. VoiceOver retain
 | `Plurifold/Models/LiveLibrary.swift` | Live content models and serialized study updates |
 | `Plurifold/Models/MobileLanguageCatalog.swift` | Available Home languages, flags, and language-scoped destinations |
 | `Plurifold/Models/MobileStudyScope.swift` | Shared language and tab navigation, reset per signed-in account |
+| `Plurifold/Models/TermDefinitions.swift` | Saved-definition matching, dictionary results, source links, and attribution |
 | `Plurifold/Models/MobileVocabularyReview.swift` | Language-filtered vocabulary and session review queue |
 | `Plurifold/Models/MobileLibraryIndex.swift` | Course folders, lesson groups, and search classification |
 | `Plurifold/Models/ReadingDocument.swift` | Continuous text and original paragraph offsets for reading places |
@@ -72,7 +76,7 @@ Every word can be selected regardless of its vocabulary status. VoiceOver retain
 | `design/AppIcon.svg` | User-supplied monochrome p-and-block-cursor icon source |
 | `codemagic.yaml` | Manual simulator and TestFlight build workflows |
 
-The production origin is `https://www.plurifold.com`. The native client requires the matching mobile API routes on that website. The account configuration supplies only the Supabase public URL and publishable key. Authentication tokens are restricted to the verified Supabase project and approved Plurifold API requests; media and website links do not receive those headers.
+The production origin is `https://www.plurifold.com`. The native client requires the matching mobile API routes on that website, including `/api/mobile/dictionary` and the `lookupOnly` / `cacheContext` options on `/api/define`. The website continues using its existing AI model; GPT-4.1 nano is the mobile generation profile. The account configuration supplies only the Supabase public URL and publishable key. Authentication tokens are restricted to the verified Supabase project and approved Plurifold API requests; media and website links do not receive those headers.
 
 ## Development and verification
 
@@ -83,3 +87,9 @@ The supplied SVG is preserved unchanged in `design/AppIcon.svg`, including its b
 On a Mac with Xcode and an iOS 17+ simulator installed, open `Plurifold.xcodeproj`, select the **Plurifold** scheme, and run the app. Run tests with Xcode's **Product → Test**, or use `bash scripts/test_ios.sh` from the project root.
 
 [VALIDATION.md](VALIDATION.md) distinguishes the original successful builds from the checks performed on this update. Local Swift grammar parsing does not replace compilation, XCTest execution, or device verification.
+
+## Dictionary source
+
+Dictionary excerpts come from [Wiktionary contributors](https://en.wiktionary.org/wiki/Wiktionary:About), through the [Wikimedia REST API](https://www.mediawiki.org/wiki/Wikimedia_REST_API), under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). Source HTML is converted to plain text, styles and scripts are removed, and the number of senses is limited. The app labels those changes and preserves contributor, entry, source, and license information when saving a dictionary meaning. This is a community-edited source; a dictionary match does not certify the separate AI explanation.
+
+The server caches public dictionary results, caps response sizes and concurrent upstream requests, and honors provider cooldowns. It sends only a word to Wiktionary, with no account token or lesson context. Its REST definition endpoint is experimental, so unavailable results have a retry path and AI remains available separately. A locally indexed dictionary dataset and offline lookup are future work.

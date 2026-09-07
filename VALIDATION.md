@@ -2,7 +2,23 @@
 
 Updated on 2026-09-07. The development workspace runs Linux and has no Xcode or native iOS simulator. Historical build results and current source checks are separated below.
 
-## Current review, reactive selection, and mobile AI update
+## Current dictionary and desktop-definition reuse update
+
+- Saved account meanings now display immediately in lesson word details, including original saved context. Matching retains language, variety and word/phrase boundaries. Foreground return refreshes desktop edits after native writes finish.
+- Dictionary lookup and read-only AI-cache lookup run concurrently. New generation uses the explicit Explain in this passage action. Dictionary senses can be saved independently, retaining contributor/source/license attribution and an excerpt/formatting-change notice.
+- Desktop AI reuse requires the same authenticated account, selection, language/variety, scope, and normalized context. The optional full cacheContext must contain the current AI context. Lookups with no result never call the provider. Incomplete or canceled desktop highlights have no definition to retrieve.
+- Wiktionary results are restricted to the requested language, parsed into plain text, and followed at most one inflection link to a verified same-language Wiktionary article. The adapter uses positive/negative caches, bounded response size/concurrency/timeout, and provider cooldowns. Account tokens and lesson contexts are never sent to the dictionary provider.
+
+Completed checks:
+
+- Twenty-one focused server tests pass across AI reuse/profile, dictionary handling, and existing mobile study integration. They cover account/context isolation, body limits with Japanese text, markup removal, source/lemma restrictions, attribution, error states, caching, and rate limits.
+- Live adapter probes returned dictionary entries for olen → olema, finiamo → finire, and 猫. These establish adapter behavior for those examples, not comprehensive dictionary coverage or AI accuracy.
+- All 44 Swift files grammar-parse: 34 app sources and ten test sources. The regenerated project validates 120 object references. Eleven new XCTest methods bring the total to 79; native compilation and XCTest execution still require Codemagic.
+- Production server build passes. A separate TypeScript check reports the existing Cloudflare ambient-type and unrelated reader/worker errors, with no diagnostics in the changed files. No signing, account schema, or dictionary corpus migration is required.
+
+Device checks: save on desktop and return to iOS; open the saved term; reuse a completed same-context desktop lookup; inspect and save attributed dictionary meanings; request separate AI for contextual grammar/collocations; test unavailable dictionary retry and foregrounding during a save. The dictionary endpoint is experimental, and coverage of inflections and regional uses varies. No offline corpus is included.
+
+## Previous review, reactive selection, and mobile AI update
 
 - Playback sentence hold is 0.45 seconds. Its frozen sentence target and pause behavior remain.
 - Selected words join across spaces into a rounded fill per visual line. A 0.26-second local bubble pulse responds to touched words without modifying text or line wrapping. Reduce Motion and VoiceOver suppress the pulse. Clear, cancellation, text replacement, and view removal cancel it.

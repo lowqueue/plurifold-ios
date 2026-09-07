@@ -136,6 +136,17 @@
 			isa = PBXBuildFile;
 			fileRef = 04EF4073610BF239A5FE9CCD;
 		};
+		BC71A782F140CE6CFD4AEF32 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			name = TermDefinitions.swift;
+			path = Plurifold/Models/TermDefinitions.swift;
+			sourceTree = SOURCE_ROOT;
+		};
+		5AA61B68D10DCAB642094FF0 = {
+			isa = PBXBuildFile;
+			fileRef = BC71A782F140CE6CFD4AEF32;
+		};
 		8F0C391B8A9BBAEA1293B623 = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -499,6 +510,17 @@
 			isa = PBXBuildFile;
 			fileRef = AEB66B25AAAAAE17E5207641;
 		};
+		3631274E3A8AC23F1FE90EF5 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			name = TermDefinitionsTests.swift;
+			path = PlurifoldTests/TermDefinitionsTests.swift;
+			sourceTree = SOURCE_ROOT;
+		};
+		42615D83D819438D66F8ED9F = {
+			isa = PBXBuildFile;
+			fileRef = 3631274E3A8AC23F1FE90EF5;
+		};
 		81F31879437340D5CD6ED968 = {
 			isa = PBXFileReference;
 			explicitFileType = wrapper.application;
@@ -528,6 +550,7 @@
 				FCCDE74481761E321180F995,
 				45FDF515BE2FBDD1DA7F1820,
 				04EF4073610BF239A5FE9CCD,
+				BC71A782F140CE6CFD4AEF32,
 				8F0C391B8A9BBAEA1293B623,
 				27B800BF2A67A1979D115795,
 				67E282A4ADCD2A1325542B48,
@@ -568,6 +591,7 @@
 				2CAAD1237BE18426D8F28DD2,
 				613C048CC301C47E4F97449D,
 				AEB66B25AAAAAE17E5207641,
+				3631274E3A8AC23F1FE90EF5,
 			);
 			name = PlurifoldTests;
 			sourceTree = "<group>";
@@ -606,6 +630,7 @@
 				6BE4D1623D292EFDB86172C6,
 				942F1C1BB79653E18F634AA6,
 				801E2D711DD13164ED25902E,
+				5AA61B68D10DCAB642094FF0,
 				EA26215B2CBBB6E4A0843930,
 				38D2436C76464B6888E6D73A,
 				1189CD96FECD08F49A6AABEA,
@@ -659,6 +684,7 @@
 				0F72CEBFF839F4875FFB6B41,
 				5AC76136B058CFE0363E83D3,
 				0FB00C0B29D9AE6685ACF9F0,
+				42615D83D819438D66F8ED9F,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

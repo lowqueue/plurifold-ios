@@ -31,8 +31,11 @@ struct PlurifoldApp: App {
 @MainActor
 private struct SignedInRoot: View {
     @EnvironmentObject private var session: NativeSession
+    @Environment(\.scenePhase) private var scenePhase
     @StateObject private var store: LiveLibraryStore
     @StateObject private var studyScope = MobileStudyScope()
+    @State private var needsForegroundRefresh = false
+    @State private var foregroundRefreshTask: Task<Void, Never>?
 
     init(session: NativeSession) {
         _store = StateObject(wrappedValue: LiveLibraryStore(session: session))
@@ -61,6 +64,38 @@ private struct SignedInRoot: View {
             if !loading, store.notice == nil {
                 studyScope.reconcile(languages: MobileStudyLanguageList(courses: store.courses, words: store.words).languages)
             }
+            if !loading { refreshAfterReturning() }
+        }
+        .onChange(of: store.isSaving) { _, saving in
+            if !saving { refreshAfterReturning() }
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active {
+                needsForegroundRefresh = true
+                refreshAfterReturning()
+            } else {
+                foregroundRefreshTask?.cancel()
+            }
+        }
+        .onDisappear {
+            needsForegroundRefresh = false
+            foregroundRefreshTask?.cancel()
+            foregroundRefreshTask = nil
+        }
+    }
+
+    private func refreshAfterReturning() {
+        // A desktop edit should appear on return to the app. Wait for native
+        // writes to finish; the store also rejects stale refresh snapshots.
+        guard needsForegroundRefresh, scenePhase == .active,
+              !store.isSaving, !store.isLoading, foregroundRefreshTask == nil else { return }
+        needsForegroundRefresh = false
+        foregroundRefreshTask = Task {
+            defer {
+                foregroundRefreshTask = nil
+                if needsForegroundRefresh { refreshAfterReturning() }
+            }
+            await store.refresh()
         }
     }
 

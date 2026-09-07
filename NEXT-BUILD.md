@@ -4,7 +4,7 @@ Use the existing GitHub repository, Codemagic application, and TestFlight group.
 
 ## Start the build
 
-1. Open [lowqueue/plurifold-ios](https://github.com/lowqueue/plurifold-ios) and confirm branch **main** shows **Add language review, reactive selection, and lean mobile AI**.
+1. Open [lowqueue/plurifold-ios](https://github.com/lowqueue/plurifold-ios) and confirm branch **main** shows **Add dictionary definitions and desktop lookup reuse**.
 2. Open **plurifold-ios** in Codemagic. Select **main** and refresh the configuration if needed.
 3. Choose **Start new build → Plurifold - TestFlight**.
 4. Confirm the build overview shows the latest GitHub commit. Rebuilding an older commit will not include this update.
@@ -18,9 +18,12 @@ After Apple's processing completes, assign the build to your existing internal t
 - Hold a player transcript sentence for about **0.45 seconds**. Its original sentence should stay fixed while the player pauses and the study sheet opens.
 - Hold a word for **0.2 seconds**, then drag. Neighbouring selected words should join into one blue shape per line, with a small bubble response and one haptic tick as you cross words. Check reversing, multiline dragging, clear, normal scrolling, and Reduce Motion.
 - Choose **Italian** on Home. Words and Review should show only Italian. Switch languages and check both tabs again. Review offers **Reveal meaning**, **Again**, and **Got it** for a session round.
-- Explain a word, phrase, and sentence, then ask a follow-up. Mobile now requests a compact AI profile. Check meaning and grammar quality in your target languages, as well as response time.
+- Save a meaning on desktop, return to the app, and open that term. Check **Your saved definition** and its original context.
+- Complete a desktop AI lookup without saving it. Open the same selection in the same passage on mobile and check **Earlier AI explanation from your account**. A different context should require its own AI explanation.
+- Try **olen**, **finiamo**, or another individual word. Inspect Dictionary and the linked source, then save one meaning. Attribution should remain visible in Words/Review and on desktop.
+- Use **Explain in this passage** for a word, phrase, or sentence, then ask a follow-up. New generation is explicit; the website retains its current model and mobile uses the compact profile.
 
-The server needs the matching `mobile-lite` profile on `/api/define` and `/api/ask` before this app revision is installed. This update includes that server change. No API keys belong in the iOS repository.
+The matching server update includes `/api/mobile/dictionary` and read-only reuse of earlier explanations through `/api/define`. New mobile AI generation still uses `mobile-lite`; dictionary lookup and saved meanings do not require generating AI. No API keys belong in the iOS repository.
 
 See [README.md](README.md) for the broader device checklist and [VALIDATION.md](VALIDATION.md) for checks already completed. Local grammar checks do not replace the Codemagic build or iPhone verification.
 
