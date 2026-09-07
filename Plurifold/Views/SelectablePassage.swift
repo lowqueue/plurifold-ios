@@ -13,7 +13,11 @@ struct PassageSelection: Identifiable {
         let count = context.utf16.count
         guard range.location != NSNotFound, range.location >= 0,
               range.length > 0, range.location <= count,
-              range.length <= count - range.location,
+              range.length <= count - range.location else { return nil }
+        // Range conversion alone can accept an offset inside a surrogate pair,
+        // then Swift's substring expands it to the whole visible character.
+        // Require whole characters so the text and stored UTF-16 range agree.
+        guard (context as NSString).rangeOfComposedCharacterSequences(for: range) == range,
               let indices = Range(range, in: context) else { return nil }
         let selected = String(context[indices])
         guard !selected.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }

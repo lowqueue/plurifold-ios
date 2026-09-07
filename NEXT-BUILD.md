@@ -2,7 +2,7 @@
 
 Your signing setup already works. Use the existing GitHub repository, Codemagic application, and TestFlight group.
 
-The companion website API update is saved as Plurifold version 84 and awaits publication approval. Publish that version before testing account sign-in and live content in this app. You can upload and build the iOS source while publication is pending.
+The companion website API update is published. This package includes the Unicode selection correction and the supplied monochrome p-and-block-cursor app icon. Download the ZIP again to get both updates, then commit the upload and start a new build.
 
 ## 1. Extract the full source ZIP
 
@@ -24,7 +24,7 @@ This package contains the full project. Do not upload the ZIP itself or add an e
 2. Choose **Add file → Upload files**.
 3. From the extracted folder, select all of its files and folders and drag them into GitHub's upload area. Wait for the upload queue to finish.
 4. Confirm that nested files are included, especially `Plurifold/Networking/NativeSession.swift`, `Plurifold/Views/LiveReaderView.swift`, `PlurifoldTests/NativeSessionTests.swift`, and `scripts/test_ios.sh`. Root documents alone are not the complete update.
-5. Enter **Add live accounts, lessons, and selectable word study** as the commit message. Select **Commit directly to the main branch** and click **Commit changes**.
+5. Enter **Update app icon and Unicode text selection** as the commit message. Select **Commit directly to the main branch** and click **Commit changes**.
 6. Wait for GitHub to return to the repository. Refresh it and confirm that a new commit appears. Open **Plurifold → Networking → NativeSession.swift** and **scripts → test_ios.sh** to verify that the folders reached the repository.
 
 If GitHub's upload button stalls again, check whether that commit actually appeared before starting a build. A reliable alternative is GitHub Desktop: clone this same repository, copy the extracted project contents into the clone, replace matching files, then **Commit to main → Push origin**. Both steps are required to send the changes to GitHub.

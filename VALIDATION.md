@@ -2,6 +2,18 @@
 
 Updated on 2026-09-07. The development workspace runs Linux and has no Xcode or native iOS simulator. Historical build results and current source checks are separated below.
 
+## Replacement app icon
+
+The supplied `AppIcon(1).svg` replaces the original icon source in `design/AppIcon.svg` without changing its bytes. All 13 PNG sizes in `AppIcon.appiconset` were regenerated for the existing 18 iPhone, iPad, and App Store slots. The PNGs retain the source geometry and color, use an opaque white background, and show the cursor in its visible state. PNG dimensions, RGB encoding without transparency, asset references, and the rendered artwork were checked. The original SVG retains its animation; the exported app icons are static.
+
+## Latest Codemagic result and selection correction
+
+The supplied `test_sign_in_and_text_selection.log` confirms that the app and test bundle compiled using Xcode 26.6 and the iOS 26.5 simulator SDK. All seven session tests, all nine study-store tests, and four of five selection tests passed: 20 of 21 tests in total.
+
+The sole failure was `testInvalidRangesAndWhitespaceCannotCreateSelections`: the range `{1, 1}` inside `🌍 ciao` selected the whole emoji even though it starts halfway through its UTF-16 surrogate pair. The initializer now verifies that NSString's composed-character range exactly matches the requested range before converting it to Swift indices. This keeps the stored range and selected text consistent.
+
+An additional test accepts complete emoji and accented characters while rejecting every partial UTF-16 subrange for a surrogate-pair emoji, decomposed accent, variation selector, skin-tone/ZWJ emoji, flag, and decomposed Japanese character. The suite now contains 22 tests. Post-fix native compilation and execution are pending the next Codemagic run; the failing test remains enabled.
+
 ## Current live-account update
 
 Completed checks for the prepared update:
@@ -14,13 +26,13 @@ Completed checks for the prepared update:
 - The reader selection code was checked for valid UTF-16 boundaries and explicit phrase lookup. Media and speech lifecycle review identified shared audio-session ownership and was followed by an audio coordinator update.
 - `git diff --check` reported no whitespace errors.
 
-The prepared course catalog contains four course collections with 75 entries. The signed-in library also includes the published and private saved lessons authorized for that account. The matching website update passed its production build and is saved as Plurifold version 84, source commit `d3fbb7fa79f6bd0bcfa66bc96f709e4981457b51`. Its production deployment is pending because automatic approval review requires confirmation in the current conversation. A successful live-account device session is also pending; web integration tests alone do not establish either result.
+The prepared course catalog contains four course collections with 75 entries. The signed-in library also includes the published and private saved lessons authorized for that account. The matching website update passed its production build and is published as Plurifold version 84, source commit `d3fbb7fa79f6bd0bcfa66bc96f709e4981457b51`. Live checks passed for public account configuration, authenticated endpoint protection, invalid-token rejection, and the signed-out website entry. A real live-account session on the iPhone remains to be checked.
 
 ## Native test gate still to run
 
-The source contains 21 XCTest methods: seven authentication/session tests, five word/phrase selection tests, and nine original study-store tests. The new **Plurifold - TestFlight** workflow runs them before signing and uploading the IPA.
+The source contains 22 XCTest methods: seven authentication/session tests, six word/phrase selection tests, and nine original study-store tests. The **Plurifold - TestFlight** workflow runs them before signing and uploading the IPA.
 
-No native compilation, XCTest execution, simulator launch, or device run of this live-account update has occurred in the Linux workspace. A successful grammar parse does not prove it will compile or behave correctly on iOS.
+The supplied Codemagic log establishes native compilation and simulator test execution for the preceding source revision. This Linux workspace can validate Swift grammar but cannot run Xcode or the new regression test. The post-fix source still requires Codemagic verification and a device check.
 
 The next Codemagic run must establish compilation and test results. The next iPhone check must establish real account sign-in, authorized content loading, AI responses, website synchronization, text selection handles, media playback, audio handoff, and persistence across app restarts. Large Dynamic Type sizes, VoiceOver, light/dark appearance, and iPad layout also need Apple-device verification.
 

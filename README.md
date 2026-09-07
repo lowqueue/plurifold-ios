@@ -2,7 +2,7 @@
 
 A native SwiftUI app for the same Plurifold account, lessons, and saved vocabulary you use on the website. Requires iOS 17 or later on iPhone or iPad.
 
-The earlier prototype has already reached an iPhone through TestFlight. This source update adds account access and live content. Its new native code still needs the Codemagic build, XCTest run, and device checks described below.
+The earlier prototype has already reached an iPhone through TestFlight. The first live-account update compiled in Codemagic and passed 20 of 21 tests, including all sign-in tests. This package fixes the one failure, an incomplete Unicode character being accepted as a selection, and adds regression coverage. Run Codemagic again to verify the correction before installing the new build.
 
 ## Install this update from Windows
 
@@ -55,7 +55,7 @@ Saved highlights identify your vocabulary. Native text selection also works on t
 | `PlurifoldTests` | Session, selection, and original study-store XCTest coverage |
 | `scripts/generate_project.py` | Deterministic Xcode project generation and file membership |
 | `scripts/test_ios.sh` | Select an installed iPhone simulator and run XCTest |
-| `design/AppIcon.svg` | Source of the green letter-and-cursor app icon |
+| `design/AppIcon.svg` | User-supplied monochrome p-and-block-cursor icon source |
 | `codemagic.yaml` | Manual simulator and TestFlight build workflows |
 
 The production origin is `https://www.plurifold.com`. The native client requires the matching mobile API routes on that website. The account configuration supplies only the Supabase public URL and publishable key. Authentication tokens are restricted to the verified Supabase project and approved Plurifold API requests; media and website links do not receive those headers.
@@ -63,6 +63,8 @@ The production origin is `https://www.plurifold.com`. The native client requires
 ## Development and verification
 
 After adding or removing source files, regenerate the project with `python3 scripts/generate_project.py`. Codemagic does this automatically before each build. All app-icon PNGs are included, so icon regeneration tools are not required to build.
+
+The supplied SVG is preserved unchanged in `design/AppIcon.svg`, including its blinking cursor. The app icon catalog contains static PNG exports with the cursor visible and an opaque white background. Run `python3 scripts/generate_app_icon.py` to regenerate those exports from the source.
 
 On a Mac with Xcode and an iOS 17+ simulator installed, open `Plurifold.xcodeproj`, select the **Plurifold** scheme, and run the app. Run tests with Xcode's **Product → Test**, or use `bash scripts/test_ios.sh` from the project root.
 

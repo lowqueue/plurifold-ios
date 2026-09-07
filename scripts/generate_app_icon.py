@@ -2,6 +2,7 @@
 """Render the repo's vector icon into the iPhone/iPad asset catalog.
 
 The PNGs are checked in, so normal Xcode and Codemagic builds need no renderer.
+The original SVG retains its animation; PNGs capture the visible cursor on white.
 To change the icon, edit design/AppIcon.svg, install CairoSVG==2.8.2, and run this.
 """
 
@@ -44,8 +45,12 @@ def main() -> None:
             pixels = int(Decimal(size) * scale)
             filename = f"AppIcon-{pixels}.png"
             if pixels not in rendered:
-                cairosvg.svg2png(bytestring=source, write_to=str(ICON / filename),
-                                output_width=pixels, output_height=pixels)
+                png = cairosvg.svg2png(bytestring=source,
+                                      output_width=pixels, output_height=pixels,
+                                      background_color="#FFFFFF")
+                # Write the returned bytes explicitly so the final PNG is fully
+                # flushed before this short-lived rendering process exits.
+                (ICON / filename).write_bytes(png)
                 rendered.add(pixels)
             images.append({"idiom": idiom, "size": f"{size}x{size}",
                            "scale": f"{scale}x", "filename": filename})

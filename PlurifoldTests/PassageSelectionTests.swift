@@ -28,6 +28,28 @@ final class PassageSelectionTests: XCTestCase {
         }
     }
 
+    func testSelectionsRequireWholeCharactersAndPreserveCompleteOnes() throws {
+        for character in ["🌍", "e\u{301}", "☕\u{FE0F}", "👩🏽‍💻", "🇪🇪", "か\u{3099}"] {
+            let context = "A\(character)B"
+            let width = character.utf16.count
+            let complete = NSRange(location: 1, length: width)
+            let selection = try XCTUnwrap(PassageSelection(context: context, range: complete))
+            XCTAssertEqual(Array(selection.text.utf16), Array(character.utf16))
+            XCTAssertEqual(selection.range, complete)
+
+            // Exercise every partial UTF-16 range, including ranges that split
+            // a surrogate pair, accent, variation selector, or joined emoji.
+            for offset in 0..<width {
+                for length in 1...(width - offset) {
+                    let partial = NSRange(location: 1 + offset, length: length)
+                    guard partial != complete else { continue }
+                    XCTAssertNil(PassageSelection(context: context, range: partial),
+                                 "Partial character accepted: \(character), \(partial)")
+                }
+            }
+        }
+    }
+
     func testWordTapUsesUnicodeOffsetsAndDoesNotSelectSpacesOrPunctuation() throws {
         let context = "🌍 Un caffè, grazie."
         let expected = (context as NSString).range(of: "caffè")
