@@ -1,5 +1,4 @@
 import Foundation
-import NaturalLanguage
 import SwiftUI
 
 @MainActor
@@ -12,17 +11,15 @@ struct SelectionInsightSheet: View {
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var speech = SpeechPlayer()
     @State private var insight: SelectionInsight?
-    @State private var isLoading = true
     @State private var isLoadingDictionary = true
+    @State private var dictionaryTask: Task<Void, Never>?
     @State private var dictionary: WordDictionaryResponse?
     @State private var dictionaryError: String?
     @State private var insightSource: String?
     @State private var isGeneratingInsight = false
-    @State private var didRequestAI = false
     @State private var generateTask: Task<Void, Never>?
     @State private var lookupError: String?
     @State private var lookupGeneration = UUID()
-    @State private var retryNumber = 0
     @State private var question = ""
     @State private var conversation: [InsightExchange] = []
     @State private var askError: String?
@@ -35,17 +32,11 @@ struct SelectionInsightSheet: View {
     @FocusState private var questionFocused: Bool
 
     private var savedKind: String {
-        let tokenizer = NLTokenizer(unit: .word)
-        tokenizer.string = selection.text
-        tokenizer.setLanguage(NLLanguage(rawValue: String(lesson.languageCode.prefix(2))))
-        var words = 0
-        tokenizer.enumerateTokens(in: selection.text.startIndex..<selection.text.endIndex) { range, _ in
-            if selection.text[range].unicodeScalars.contains(where: { CharacterSet.alphanumerics.contains($0) }) {
-                words += 1
-            }
-            return words < 2
-        }
-        return words > 1 ? "phrase" : "word"
+        DefinitionSelection.kind(for: selection.text, languageCode: lesson.languageCode)
+    }
+
+    private var dictionaryTerm: String? {
+        DefinitionSelection.dictionaryTerm(for: selection.text, languageCode: lesson.languageCode)
     }
 
     private var scope: String {
@@ -72,16 +63,14 @@ struct SelectionInsightSheet: View {
                     heading
                     pronunciationButton
 
+                    dictionaryCard
+
                     if let savedDefinition {
                         savedDefinitionCard(savedDefinition)
                     }
 
-                    if savedKind == "word" { dictionaryCard }
+                    if insight == nil { aiExplanationButton }
 
-                    if isLoading {
-                        ProgressView("Checking earlier explanations…")
-                            .font(.footnote).foregroundStyle(Palette.secondary)
-                    }
                     if let lookupError {
                         Label(lookupError, systemImage: "exclamationmark.circle")
                             .font(.footnote).foregroundStyle(Palette.secondary)
@@ -90,24 +79,7 @@ struct SelectionInsightSheet: View {
                         explanation(insight)
                         saveButton(insight)
                         followUp(insight)
-                    } else {
-                        aiExplanationButton
                     }
-
-                    if (lookupError != nil || dictionaryError != nil || dictionary?.status == .unavailable),
-                       !isLoading, !isLoadingDictionary {
-                        Button("Check sources again") { retryNumber += 1 }
-                            .buttonStyle(.bordered)
-                            .disabled(isGeneratingInsight)
-                    }
-
-                    VStack(alignment: .leading, spacing: 10) {
-                        Eyebrow(text: "From this lesson")
-                        Text(requestContext).textSelection(.enabled)
-                        Text(lesson.title).font(.caption).foregroundStyle(Palette.secondary)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .studyCard()
                 }
                 .padding(24)
             }
@@ -120,11 +92,14 @@ struct SelectionInsightSheet: View {
                     Button("Done") { dismiss() }
                 }
             }
-            .task(id: "\(selection.id.uuidString):\(retryNumber)") { await loadSources() }
+            .task(id: selection.id) { await loadSources() }
             .onDisappear {
+                lookupGeneration = UUID()
                 cancelAsking()
                 generateTask?.cancel()
                 generateTask = nil
+                dictionaryTask?.cancel()
+                dictionaryTask = nil
                 saveTask?.cancel()
                 saveTask = nil
                 speech.stop()
@@ -197,11 +172,15 @@ struct SelectionInsightSheet: View {
                 Link("CC BY-SA 4.0", destination: WordDictionaryResponse.attributionLicenseURL)
                     .font(.caption)
                 if isSaved {
-                    Text("Your existing saved definition is kept above.")
+                    Text("Your existing saved definition is kept below.")
                         .font(.footnote).foregroundStyle(Palette.secondary)
                 }
             } else {
                 Text(dictionaryMessage).font(.subheadline).foregroundStyle(Palette.secondary)
+                if dictionaryTerm != nil, validSelection {
+                    Button("Try dictionary again") { retryDictionary() }
+                        .buttonStyle(.bordered).controlSize(.small)
+                }
             }
             if isSavingSelection { ProgressView("Saving…") }
             if didAttemptSave, let notice = store.notice {
@@ -214,12 +193,18 @@ struct SelectionInsightSheet: View {
     }
 
     private var dictionaryMessage: String {
+        guard validSelection else { return "Select a shorter word or phrase, up to 800 characters." }
+        guard dictionaryTerm != nil else {
+            return savedKind == "phrase"
+                ? "Dictionary lookup is for individual words. Select one word to see its entry, or use AI for this phrase."
+                : "This selection could not be looked up as an individual word. Try selecting just the word, or request an AI explanation."
+        }
         if let dictionaryError { return dictionaryError }
         switch dictionary?.status {
         case .notFound, .found:
             return "No matching dictionary entry was found for this form. AI can explain it in this passage."
         case .notApplicable:
-            return "Dictionary lookup is available for supported individual words. AI can explain this selection."
+            return "Dictionary lookup is not available for this word or language yet. You can request an AI explanation."
         case .unavailable, .none:
             return "Wiktionary is unavailable right now. You can still request an AI explanation."
         }
@@ -234,12 +219,12 @@ struct SelectionInsightSheet: View {
                         Text("Explaining…")
                     }
                 } else {
-                    Label("Explain in this passage", systemImage: "sparkles")
+                    Label(lookupError == nil ? "Explain with AI" : "Try AI explanation again", systemImage: "sparkles")
                 }
             }
             .buttonStyle(StudyButtonStyle())
             .disabled(!validSelection || isGeneratingInsight)
-            Text("AI can explain the meaning, grammar, and expressions in context.")
+            Text("Meaning and grammar for this passage.")
                 .font(.footnote).foregroundStyle(Palette.secondary)
         }
     }
@@ -403,8 +388,9 @@ struct SelectionInsightSheet: View {
         lookupGeneration = generation
         generateTask?.cancel()
         generateTask = nil
+        dictionaryTask?.cancel()
+        dictionaryTask = nil
         isGeneratingInsight = false
-        didRequestAI = false
         cancelAsking()
         conversation = []
         question = ""
@@ -414,45 +400,34 @@ struct SelectionInsightSheet: View {
         dictionary = nil
         lookupError = nil
         dictionaryError = nil
-        isLoading = true
-        isLoadingDictionary = savedKind == "word"
+        isLoadingDictionary = dictionaryTerm != nil
         guard validSelection else {
             lookupError = "Select a shorter word or phrase, up to 800 characters, to get an explanation."
-            isLoading = false
             isLoadingDictionary = false
             return
         }
-        // Both lookups are read-only: neither starts a fresh AI generation.
-        // Each result is displayed as soon as it arrives.
-        async let previous: Void = loadCachedInsight(generation: generation)
-        async let word: Void = loadDictionary(generation: generation)
-        _ = await (previous, word)
+        // Opening details requests only the dictionary. Even cached AI explanations
+        // stay behind the explicit AI button, which reuses them on the server.
+        await loadDictionary(generation: generation)
     }
 
-    private func loadCachedInsight(generation: UUID) async {
-        defer { if lookupGeneration == generation { isLoading = false } }
-        do {
-            let request = InsightDefineRequest(selection: selection.text, context: requestContext,
-                                               language: lesson.languageName, dialect: lesson.dialect,
-                                               scope: scope, cacheContext: cacheContext, lookupOnly: true)
-            let response: InsightDefineResponse = try await store.api.post("/api/define", body: request)
-            try Task.checkCancellation()
-            guard lookupGeneration == generation, !didRequestAI else { return }
-            insight = response.insight
-            insightSource = response.source
-        } catch is CancellationError {
-            // The selected passage or account changed.
-        } catch {
-            guard !Task.isCancelled, lookupGeneration == generation, !didRequestAI else { return }
-            lookupError = "Earlier AI explanations could not be checked. You can still request a new explanation."
+    private func retryDictionary() {
+        guard !isLoadingDictionary, validSelection, dictionaryTerm != nil else { return }
+        dictionary = nil
+        dictionaryError = nil
+        isLoadingDictionary = true
+        let generation = lookupGeneration
+        dictionaryTask = Task {
+            await loadDictionary(generation: generation)
+            if lookupGeneration == generation { dictionaryTask = nil }
         }
     }
 
     private func loadDictionary(generation: UUID) async {
         defer { if lookupGeneration == generation { isLoadingDictionary = false } }
-        guard savedKind == "word" else { return }
+        guard let dictionaryTerm else { return }
         do {
-            let request = WordDictionaryRequest(term: selection.text, languageCode: lesson.languageCode)
+            let request = WordDictionaryRequest(term: dictionaryTerm, languageCode: lesson.languageCode)
             let response: WordDictionaryResponse = try await store.api.post("/api/mobile/dictionary", body: request)
             try Task.checkCancellation()
             guard lookupGeneration == generation else { return }
@@ -468,8 +443,6 @@ struct SelectionInsightSheet: View {
     private func generateInsight() {
         guard validSelection, !isGeneratingInsight else { return }
         let generation = lookupGeneration
-        didRequestAI = true
-        isLoading = false
         lookupError = nil
         isGeneratingInsight = true
         generateTask = Task {

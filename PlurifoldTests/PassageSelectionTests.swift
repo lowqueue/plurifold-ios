@@ -148,6 +148,45 @@ final class PassageSelectionTests: XCTestCase {
         XCTAssertFalse(feedback.move(to: second))
     }
 
+    func testPullFromCompletedSelectionDoesNotBecomePhraseDragAfterHolding() {
+        // Whether a stationary pause has elapsed cannot steal a downward pull.
+        for held in [false, true] {
+            XCTAssertEqual(PassagePullDecision.intent(dx: 2, dy: 7, canExtend: held), .pending)
+            XCTAssertEqual(PassagePullDecision.intent(dx: 2, dy: 8, canExtend: held), .pull)
+            XCTAssertEqual(PassagePullDecision.intent(dx: -5, dy: 56, canExtend: held), .pull)
+        }
+        // Phrase extension remains deliberate; unheld sideways/upward swipes
+        // release the reader scroll instead of changing the completed selection.
+        XCTAssertEqual(PassagePullDecision.intent(dx: 14, dy: 2, canExtend: true), .extend)
+        XCTAssertEqual(PassagePullDecision.intent(dx: 2, dy: -14, canExtend: true), .extend)
+        XCTAssertEqual(PassagePullDecision.intent(dx: 14, dy: 2, canExtend: false), .scroll)
+        XCTAssertEqual(PassagePullDecision.intent(dx: 2, dy: -14, canExtend: false), .scroll)
+    }
+
+    func testPullCanProgressVerySlowlyAndReverseBeforeRelease() {
+        var lastProgress: CGFloat = 0
+        // Tiny increments work without needing any minimum movement speed.
+        for step in 0...560 {
+            let progress = PassagePullDecision.progress(distance: CGFloat(step) / 10)
+            XCTAssertGreaterThanOrEqual(progress, lastProgress)
+            lastProgress = progress
+        }
+        XCTAssertEqual(lastProgress, 1)
+        XCTAssertLessThan(PassagePullDecision.progress(distance: 55.9), 1)
+        XCTAssertEqual(PassagePullDecision.progress(distance: 28), 0.5)
+        XCTAssertEqual(PassagePullDecision.progress(distance: -5), 0)
+        XCTAssertEqual(PassagePullDecision.progress(distance: 500), 1)
+        // Readiness follows the current distance, so retreating cancels it.
+        XCTAssertLessThan(PassagePullDecision.progress(distance: 30), 1)
+    }
+
+    func testInvalidPullGeometryCannotOpenDetails() {
+        XCTAssertEqual(PassagePullDecision.progress(distance: .nan), 0)
+        XCTAssertEqual(PassagePullDecision.progress(distance: .infinity), 0)
+        XCTAssertEqual(PassagePullDecision.intent(dx: .nan, dy: 56, canExtend: true), .scroll)
+        XCTAssertEqual(PassagePullDecision.intent(dx: 0, dy: .infinity, canExtend: false), .scroll)
+    }
+
     func testRepeatedWordTapClearsButHoldAndNewSelectionsRemain() {
         let first = NSRange(location: 3, length: 5)
         let second = NSRange(location: 10, length: 4)

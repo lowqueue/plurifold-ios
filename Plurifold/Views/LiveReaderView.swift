@@ -14,7 +14,6 @@ struct LiveReaderView: View {
     @State private var activeLoadID = UUID()
     @State private var showTranslations = false
     @State private var selection: PassageSelection?
-    @State private var pendingSelection: PassageSelection?
     @State private var clearSelectionRequest = UUID()
     @State private var showPlayback = false
     @State private var readingPosition = 0
@@ -93,7 +92,6 @@ struct LiveReaderView: View {
                             text: document.text,
                             highlights: studyTerms(lesson),
                             clearSelectionRequest: clearSelectionRequest,
-                            onClearSelection: { pendingSelection = nil },
                             languageCode: lesson.languageCode,
                             scrollRequest: scrollRequest,
                             onReadingOffsetChange: { offset in
@@ -101,7 +99,7 @@ struct LiveReaderView: View {
                                     readingPosition = position
                                 }
                             },
-                            onSelect: { pendingSelection = $0 }
+                            onOpenSelection: openSelection
                         )
                         .readingPanel(onBackgroundTap: clearSelection)
                     }
@@ -141,7 +139,7 @@ struct LiveReaderView: View {
                 Text(channel).font(.subheadline).foregroundStyle(Palette.secondary)
             }
             if !document.text.isEmpty {
-                Text("Tap a word to select it. Hold briefly, then drag to select a phrase. Tap elsewhere to clear.")
+                Text("Tap a word, or hold briefly and drag across a phrase. Then pull down on the highlight for details. Tap elsewhere to clear.")
                     .font(.footnote).foregroundStyle(Palette.secondary)
                 if store.positions[lesson.id] != nil {
                     Button("Resume reading", systemImage: "bookmark.fill") { resume(lesson) }
@@ -172,10 +170,6 @@ struct LiveReaderView: View {
 
     private func readerBar(_ lesson: MobileLesson) -> some View {
         VStack(spacing: 6) {
-            if let pendingSelection {
-                ReaderSelectionBar(selection: pendingSelection,
-                                   onExplain: { openSelection(pendingSelection) }, onClear: clearSelection)
-            }
             HStack(spacing: 14) {
                 Button {
                     readCurrentParagraph(lesson)
@@ -309,7 +303,6 @@ struct LiveReaderView: View {
     }
 
     private func clearSelection() {
-        pendingSelection = nil
         clearSelectionRequest = UUID()
     }
 

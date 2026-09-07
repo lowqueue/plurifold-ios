@@ -8,7 +8,6 @@ struct SentenceStudySheet: View {
     let lesson: MobileLesson
     @EnvironmentObject private var store: LiveLibraryStore
     @Environment(\.dismiss) private var dismiss
-    @State private var pendingSelection: PassageSelection?
     @State private var explanation: PassageSelection?
     @State private var clearSelectionRequest = UUID()
 
@@ -24,16 +23,15 @@ struct SentenceStudySheet: View {
                             highlights: lesson.vocabulary.map(\.term)
                                 + store.words.filter { $0.languageCode == lesson.languageCode }.map(\.term),
                             clearSelectionRequest: clearSelectionRequest,
-                            onClearSelection: { pendingSelection = nil },
                             languageCode: lesson.languageCode,
-                            onSelect: { selected in
-                                pendingSelection = document.selection(in: sentence, localRange: selected.range)
+                            onOpenSelection: { selected in
+                                explanation = document.selection(in: sentence, localRange: selected.range)
                             }
                         )
                         .readingPanel(onBackgroundTap: clearSelection)
-                        Text("Tap a word, or hold briefly and drag across a phrase. Tap elsewhere to clear your selection.")
+                        Text("Tap a word, or hold briefly and drag across a phrase. Then pull down on the highlight for details. Tap elsewhere to clear.")
                             .font(.footnote).foregroundStyle(Palette.secondary)
-                        Button("Explain sentence", systemImage: "text.magnifyingglass") {
+                        Button("Sentence details", systemImage: "text.magnifyingglass") {
                             explanation = PassageSelection(context: document.text, range: sentence.range)
                         }
                         .buttonStyle(.bordered)
@@ -57,14 +55,6 @@ struct SentenceStudySheet: View {
                     Button("Back to player") { dismiss() }
                 }
             }
-            .safeAreaInset(edge: .bottom) {
-                if let pendingSelection {
-                    ReaderSelectionBar(selection: pendingSelection,
-                                       onExplain: { explanation = pendingSelection }, onClear: clearSelection)
-                        .padding(.horizontal, 20).padding(.vertical, 10)
-                        .background(.regularMaterial)
-                }
-            }
             .sheet(item: $explanation, onDismiss: clearSelection) { selected in
                 SelectionInsightSheet(selection: selected, lesson: lesson)
                     .presentationDetents([.medium, .large])
@@ -75,7 +65,6 @@ struct SentenceStudySheet: View {
     }
 
     private func clearSelection() {
-        pendingSelection = nil
         clearSelectionRequest = UUID()
     }
 }

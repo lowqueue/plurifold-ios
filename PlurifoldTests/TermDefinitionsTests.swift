@@ -2,6 +2,35 @@ import XCTest
 @testable import Plurifold
 
 final class TermDefinitionsTests: XCTestCase {
+    func testDictionaryUsesIndividualEstonianAndGeorgianFormsWithoutSurroundingPunctuation() {
+        XCTAssertEqual(DefinitionSelection.dictionaryTerm(for: " “Tere!” ", languageCode: "et-EE"), "Tere")
+        XCTAssertEqual(DefinitionSelection.dictionaryTerm(for: "გამარჯობა,", languageCode: "ka-GE"), "გამარჯობა")
+        XCTAssertEqual(DefinitionSelection.dictionaryTerm(for: "(არის)", languageCode: "ka-GE"), "არის")
+        XCTAssertEqual(DefinitionSelection.dictionaryTerm(for: "l'amico", languageCode: "it-IT"), "l'amico")
+        XCTAssertEqual(DefinitionSelection.dictionaryTerm(for: "col·legi", languageCode: "ca-ES"), "col·legi")
+        XCTAssertNil(DefinitionSelection.dictionaryTerm(for: "a.b", languageCode: "et-EE"))
+    }
+
+    func testDictionaryNormalizesAccentsButNeverSendsPhrasesOrArbitrarySelectionText() {
+        XCTAssertEqual(DefinitionSelection.dictionaryTerm(for: "cafe\u{301}", languageCode: "fr-FR"), "café")
+        for term in ["mina olen", "მე ვარ", "ciao\nmondo", "a/b", "https://example.com", "!!!", "",
+                     String(repeating: "a", count: 81)] {
+            XCTAssertNil(DefinitionSelection.dictionaryTerm(for: term, languageCode: "et-EE"), term)
+        }
+    }
+
+    func testUnspacedJapanesePhrasesStaySeparateFromIndividualDictionaryWords() {
+        XCTAssertEqual(DefinitionSelection.dictionaryTerm(for: "猫。", languageCode: "ja-JP"), "猫")
+        XCTAssertNil(DefinitionSelection.dictionaryTerm(for: "猫がいる", languageCode: "ja-JP"))
+        XCTAssertEqual(DefinitionSelection.kind(for: "猫がいる", languageCode: "ja-JP"), "phrase")
+    }
+
+    func testSavedKindRecognizesWhitespacePhrasesInGeorgianAndEstonian() {
+        XCTAssertEqual(DefinitionSelection.kind(for: "მე ვარ", languageCode: "ka-GE"), "phrase")
+        XCTAssertEqual(DefinitionSelection.kind(for: "mina olen", languageCode: "et-EE"), "phrase")
+        XCTAssertEqual(DefinitionSelection.kind(for: "Tere!", languageCode: "et-EE"), "word")
+    }
+
     func testSavedDefinitionsMatchCanonicalAccentsAndCaseWithoutRemovingAccents() {
         let words = [word("café", language: "fr-FR")]
         XCTAssertNotNil(SavedDefinitionMatcher.find(in: words, term: " CAFE\u{301} ",

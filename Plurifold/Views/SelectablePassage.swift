@@ -39,7 +39,7 @@ struct SelectablePassage: UIViewRepresentable {
     var languageCode = ""
     var scrollRequest: ReaderScrollRequest? = nil
     var onReadingOffsetChange: (Int) -> Void = { _ in }
-    let onSelect: (PassageSelection) -> Void
+    var onOpenSelection: (PassageSelection) -> Void = { _ in }
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
@@ -51,7 +51,8 @@ struct SelectablePassage: UIViewRepresentable {
         view.isEditable = false
         view.isScrollEnabled = false
         view.backgroundColor = .clear
-        view.textContainerInset = .zero
+        // Room for the nearby pull cue even below a single-line sentence.
+        view.textContainerInset = UIEdgeInsets(top: 0, left: 0, bottom: 54, right: 0)
         view.textContainer.lineFragmentPadding = 0
         view.adjustsFontForContentSizeCategory = true
         view.dataDetectorTypes = []
@@ -65,13 +66,16 @@ struct SelectablePassage: UIViewRepresentable {
         gesture.delaysTouchesBegan = false
         gesture.delaysTouchesEnded = false
         gesture.addTarget(coordinator, action: #selector(Coordinator.selectionGestureChanged(_:)))
-        gesture.onTouchBegan = { [weak coordinator] point in coordinator?.beginSelection(at: point) ?? false }
+        gesture.onTouchBegan = { [weak coordinator] point in coordinator?.beginSelection(at: point) }
         gesture.onTouchMoved = { [weak coordinator] point in coordinator?.moveSelection(to: point) }
         gesture.onTouchEnded = { [weak coordinator] held in coordinator?.finishSelection(afterHold: held) }
         gesture.onHoldBegan = { [weak coordinator] in coordinator?.selectionHoldBegan() }
         gesture.onTouchCancelled = { [weak coordinator] in coordinator?.cancelSelection() }
+        gesture.onPullChanged = { [weak coordinator] distance in coordinator?.updatePull(distance: distance) }
+        gesture.onPullEnded = { [weak coordinator] open in coordinator?.finishPull(open: open) }
         view.addGestureRecognizer(gesture)
         coordinator.selectionGesture = gesture
+        coordinator.installSelectionCue(in: view)
         view.onTypographyChange = { [weak coordinator] view in coordinator?.updateAppearance(of: view) }
         view.onGeometryChange = { [weak coordinator] in coordinator?.scheduleGeometryUpdate() }
         view.onWindowRemoved = { [weak coordinator] in coordinator?.suspend() }
@@ -135,8 +139,18 @@ struct SelectablePassage: UIViewRepresentable {
         private var lastReadingOffset: Int?
         private var appliedScrollRequest: UUID?
         private var isTornDown = false
+        private let selectionCue = ReaderSelectionBar(frame: .zero)
+        private var isPulling = false
+        private var pullReady = false
+        private var touchedExistingSelection = false
 
         init(_ parent: SelectablePassage) { self.parent = parent }
+
+        func installSelectionCue(in view: PassageTextView) {
+            selectionCue.isHidden = true
+            selectionCue.onOpen = { [weak self] in self?.openCurrentSelection() }
+            view.addSubview(selectionCue)
+        }
 
         func updateAppearance(of view: PassageTextView) {
             let font = UIFont.preferredFont(forTextStyle: .title3, compatibleWith: view.traitCollection)
@@ -217,12 +231,14 @@ struct SelectablePassage: UIViewRepresentable {
             manager.invalidateDisplay(forCharacterRange: NSRange(location: 0, length: utf16Length))
             geometryWidth = view.bounds.width
             needsWordGeometry = false
+            positionSelectionCue()
         }
 
         private func setActiveRange(_ range: NSRange?) {
             guard range != activeRange else { return }
             let previous = activeRange
             activeRange = range
+            if range == nil { selectionCue.isHidden = true }
             guard let manager = textView?.highlightLayoutManager else { return }
             manager.activeRange = range
             if range == nil { manager.cancelReaction() }
@@ -258,7 +274,7 @@ struct SelectablePassage: UIViewRepresentable {
             if selectionGesture?.isEnabled != !accessible { selectionGesture?.isEnabled = !accessible }
             view.accessibilityHint = accessible
                 ? "Select a word or phrase, then choose Study selection."
-                : "Tap a word to select it. Hold briefly, then drag to select a phrase. Tap empty space to clear."
+                : "Tap a word, or hold briefly and drag across a phrase. Pull down on the highlight for details. Tap empty space to clear."
         }
 
         func startObservingAccessibility() {
@@ -290,28 +306,107 @@ struct SelectablePassage: UIViewRepresentable {
             else if recognizer.state == .cancelled || recognizer.state == .failed { recognizer.cancelTracking() }
         }
 
-        func beginSelection(at point: CGPoint) -> Bool {
-            guard let view = textView, !UIAccessibility.isVoiceOverRunning else { return false }
+        func beginSelection(at point: CGPoint) -> PassageTouchMode? {
+            guard let view = textView, !UIAccessibility.isVoiceOverRunning else { return nil }
             rebuildWordGeometryIfNeeded()
+            if !selectionCue.isHidden, selectionCue.frame.contains(point), let activeRange {
+                previousRange = activeRange
+                anchorRange = activeRange
+                touchedExistingSelection = true
+                selectionFeedback.prepare()
+                return .cue
+            }
             let position = CGPoint(x: point.x - view.textContainerInset.left,
                                    y: point.y - view.textContainerInset.top)
             guard let word = wordGeometry.word(at: position, nearest: false) else {
                 clearSelection(notify: true)
-                return false
+                return nil
             }
             previousRange = activeRange
             anchorRange = word
+            touchedExistingSelection = activeRange.map { NSIntersectionRange($0, word).length > 0 } ?? false
             wordFeedback.begin(at: word)
             selectionFeedback.prepare()
-            setActiveRange(word)
+            if !touchedExistingSelection {
+                selectionCue.isHidden = true
+                setActiveRange(word)
+            }
             view.highlightLayoutManager.react(to: word)
             pointerInWindow = view.convert(point, to: nil)
-            return true
+            return touchedExistingSelection ? .existingSelection : .newWord
         }
 
         func selectionHoldBegan() {
             guard anchorRange != nil else { return }
+            selectionCue.isHidden = true
+            if touchedExistingSelection, let anchorRange { setActiveRange(anchorRange) }
+            touchedExistingSelection = false
             emitSelectionFeedback()
+        }
+
+        private func positionSelectionCue() {
+            guard let view = textView, let range = activeRange,
+                  anchorRange == nil || touchedExistingSelection,
+                  !UIAccessibility.isVoiceOverRunning else { selectionCue.isHidden = true; return }
+            let fragments = wordGeometry.selectionFragments(for: range)
+            var visible = view.bounds
+            if let scroll = readerScrollView {
+                let viewport = scroll.bounds.inset(by: scroll.adjustedContentInset)
+                visible = visible.intersection(view.convert(viewport, from: scroll))
+            }
+            // Keep the cue by a visible selected line; never pin it to a distant
+            // screen edge after the selected words have scrolled offscreen.
+            guard !visible.isNull,
+                  let fragment = fragments.last(where: { $0.intersects(visible) }) else {
+                selectionCue.isHidden = true
+                return
+            }
+            let width = min(210, max(0, visible.width - 4))
+            let height: CGFloat = 44
+            let x = min(max(visible.minX + 2, fragment.midX - width / 2), visible.maxX - width - 2)
+            let below = fragment.maxY + 7
+            let y = below + height <= visible.maxY ? below : max(visible.minY, fragment.minY - height - 7)
+            selectionCue.bounds = CGRect(x: 0, y: 0, width: width, height: height)
+            selectionCue.center = CGPoint(x: x + width / 2, y: y + height / 2)
+            selectionCue.isHidden = false
+            if !isPulling { selectionCue.update(progress: 0, canOpen: range.length <= 800) }
+            view.bringSubviewToFront(selectionCue)
+        }
+
+        func updatePull(distance: CGFloat) {
+            guard let range = previousRange else { return }
+            isPulling = true
+            stopAutoscroll()
+            let progress = PassagePullDecision.progress(distance: distance)
+            let ready = range.length <= 800 && progress >= 1
+            if ready && !pullReady { emitSelectionFeedback() }
+            pullReady = ready
+            positionSelectionCue()
+            selectionCue.update(progress: progress, canOpen: range.length <= 800)
+            // The tiny downward lift follows distance directly, with no timed
+            // animation or velocity requirement. Reduce Motion stays still.
+            selectionCue.transform = UIAccessibility.isReduceMotionEnabled ? .identity
+                : CGAffineTransform(translationX: 0, y: min(10, max(0, distance) / 6))
+        }
+
+        func finishPull(open: Bool) {
+            isPulling = false
+            pullReady = false
+            selectionCue.transform = .identity
+            anchorRange = nil
+            previousRange = nil
+            pointerInWindow = nil
+            touchedExistingSelection = false
+            wordFeedback.reset()
+            positionSelectionCue()
+            if open { openCurrentSelection() }
+        }
+
+        private func openCurrentSelection() {
+            guard let range = activeRange, range.length <= 800,
+                  let selection = PassageSelection(context: parent.text, range: range) else { return }
+            selectionCue.isHidden = true
+            parent.onOpenSelection(selection)
         }
 
         private func emitSelectionFeedback() {
@@ -350,8 +445,11 @@ struct SelectablePassage: UIViewRepresentable {
         func finishSelection(afterHold: Bool) {
             stopAutoscroll()
             wordFeedback.reset()
+            // A stationary second touch still selects/toggles the word. A
+            // directional pull keeps the completed phrase intact instead.
+            if touchedExistingSelection, let anchorRange { setActiveRange(anchorRange) }
             guard anchorRange != nil, let range = activeRange,
-                  let selection = PassageSelection(context: parent.text, range: range) else {
+                  PassageSelection(context: parent.text, range: range) != nil else {
                 cancelSelection()
                 return
             }
@@ -359,10 +457,11 @@ struct SelectablePassage: UIViewRepresentable {
             anchorRange = nil
             pointerInWindow = nil
             previousRange = nil
+            touchedExistingSelection = false
             if shouldClear { clearSelection(notify: true); return }
-            // Publish a completed selection for the reader's Explain/Clear bar.
-            // This component never starts an AI request or presents a sheet.
-            parent.onSelect(selection)
+            positionSelectionCue()
+            // Selection itself never starts a request. A later pull opens the
+            // dictionary-first details sheet through onOpenSelection.
         }
 
         func cancelSelection() {
@@ -373,6 +472,11 @@ struct SelectablePassage: UIViewRepresentable {
             previousRange = nil
             anchorRange = nil
             pointerInWindow = nil
+            isPulling = false
+            pullReady = false
+            touchedExistingSelection = false
+            selectionCue.transform = .identity
+            positionSelectionCue()
         }
 
         private func characterOffset(at point: CGPoint, requiringInk: Bool) -> Int? {
@@ -455,6 +559,7 @@ struct SelectablePassage: UIViewRepresentable {
                         self.selectionGesture?.cancelTracking()
                     }
                     self?.scheduleReadingOffset()
+                    self?.positionSelectionCue()
                 }
             }
         }
@@ -514,7 +619,7 @@ struct SelectablePassage: UIViewRepresentable {
                   let selection = PassageSelection(context: textView.text ?? "", range: range) else { return nil }
             let explain = UIAction(title: "Study selection", image: UIImage(systemName: "text.magnifyingglass")) { [weak self] _ in
                 guard let self, self.parent.text == selection.context else { return }
-                self.parent.onSelect(selection)
+                self.parent.onOpenSelection(selection)
             }
             return UIMenu(children: [explain] + suggestedActions)
         }
@@ -529,7 +634,7 @@ struct SelectablePassage: UIViewRepresentable {
         @objc private func explainAccessibleSelection() -> Bool {
             guard let view = textView,
                   let selection = PassageSelection(context: view.text ?? "", range: view.selectedRange) else { return false }
-            parent.onSelect(selection)
+            parent.onOpenSelection(selection)
             return true
         }
     }
@@ -844,20 +949,27 @@ final class PassageTextView: UITextView {
     }
 }
 
-/// Quick taps select one word. A stationary 0.20-second hold claims phrase
-/// dragging in any direction; movement before the hold yields to scrolling.
+/// New words retain the 0.20-second hold for phrase selection. A fresh touch
+/// on a completed highlight waits for direction, however slowly it moves.
+/// Downward pulls never race the hold timer or use a velocity threshold.
+enum PassageTouchMode { case newWord, existingSelection, cue }
+
 final class WordDragGestureRecognizer: UIGestureRecognizer {
-    var onTouchBegan: ((CGPoint) -> Bool)?
+    var onTouchBegan: ((CGPoint) -> PassageTouchMode?)?
     var onTouchMoved: ((CGPoint) -> Void)?
     var onTouchEnded: ((Bool) -> Void)?
     var onTouchCancelled: (() -> Void)?
     var onHoldBegan: (() -> Void)?
+    var onPullChanged: ((CGFloat) -> Void)?
+    var onPullEnded: ((Bool) -> Void)?
     private weak var trackedTouch: UITouch?
     private var origin = CGPoint.zero
     private var latestPoint = CGPoint.zero
     private var isTrackingWord = false
     private var holdReady = false
     private var holdTimer: Timer?
+    private var mode: PassageTouchMode = .newWord
+    private var isPulling = false
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent) {
         guard trackedTouch == nil, touches.count == 1, (event.allTouches?.count ?? 1) == 1,
@@ -868,8 +980,10 @@ final class WordDragGestureRecognizer: UIGestureRecognizer {
         trackedTouch = touch
         origin = touch.location(in: view)
         latestPoint = origin
-        isTrackingWord = onTouchBegan?(origin) ?? false
-        guard isTrackingWord else { state = .failed; return }
+        guard let touchMode = onTouchBegan?(origin) else { state = .failed; return }
+        mode = touchMode
+        isTrackingWord = true
+        guard mode != .cue else { return }
         let timer = Timer(timeInterval: PassageDragDecision.holdDuration, repeats: false) { [weak self] _ in
             MainActor.assumeIsolated { self?.recognizeHold() }
         }
@@ -881,6 +995,9 @@ final class WordDragGestureRecognizer: UIGestureRecognizer {
         holdTimer = nil
         guard state == .possible, isTrackingWord, trackedTouch != nil else { return }
         holdReady = true
+        // Completed selections wait for directional intent even after a long
+        // stationary pause. This is what makes an arbitrarily slow pull work.
+        guard mode == .newWord else { return }
         state = .began
         onHoldBegan?()
         onTouchMoved?(latestPoint)
@@ -892,22 +1009,43 @@ final class WordDragGestureRecognizer: UIGestureRecognizer {
         let point = touch.location(in: view)
         latestPoint = point
         if state == .possible {
-            switch PassageDragDecision.decide(dx: point.x - origin.x, dy: point.y - origin.y, holdReady: holdReady) {
-            case .pending: return
-            case .scroll: cancelTracking(); return
-            case .select: state = .began
+            if mode != .newWord {
+                switch PassagePullDecision.intent(dx: point.x - origin.x, dy: point.y - origin.y,
+                                                  canExtend: mode == .existingSelection && holdReady) {
+                case .pending: return
+                case .scroll: cancelTracking(); return
+                case .pull:
+                    holdTimer?.invalidate()
+                    holdTimer = nil
+                    isPulling = true
+                    state = .began
+                case .extend:
+                    state = .began
+                    onHoldBegan?()
+                }
+            } else {
+                switch PassageDragDecision.decide(dx: point.x - origin.x, dy: point.y - origin.y, holdReady: holdReady) {
+                case .pending: return
+                case .scroll: cancelTracking(); return
+                case .select: state = .began
+                }
             }
         } else if state == .began || state == .changed {
             state = .changed
         } else { return }
-        onTouchMoved?(point)
+        if isPulling { onPullChanged?(point.y - origin.y) }
+        else { onTouchMoved?(point) }
     }
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent) {
         guard isTrackingWord, let touch = trackedTouch, touches.contains(touch) else { return }
         holdTimer?.invalidate()
         holdTimer = nil
-        if holdReady, let view { onTouchMoved?(touch.location(in: view)) }
+        if let view {
+            latestPoint = touch.location(in: view)
+            if isPulling { onPullChanged?(latestPoint.y - origin.y) }
+            else if holdReady && (state == .began || state == .changed) { onTouchMoved?(latestPoint) }
+        }
         state = .ended
     }
 
@@ -915,7 +1053,9 @@ final class WordDragGestureRecognizer: UIGestureRecognizer {
     func commitRecognizedSelection() {
         guard state == .ended, isTrackingWord else { return }
         isTrackingWord = false
-        onTouchEnded?(holdReady)
+        if isPulling { onPullEnded?(PassagePullDecision.progress(distance: latestPoint.y - origin.y) >= 1) }
+        else if mode == .cue { onPullEnded?(true) }
+        else { onTouchEnded?(holdReady) }
     }
 
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent) { cancelTracking() }
@@ -927,6 +1067,8 @@ final class WordDragGestureRecognizer: UIGestureRecognizer {
         if isTrackingWord { onTouchCancelled?() }
         isTrackingWord = false
         holdReady = false
+        isPulling = false
+        mode = .newWord
         trackedTouch = nil
     }
 
@@ -936,9 +1078,29 @@ final class WordDragGestureRecognizer: UIGestureRecognizer {
         if isTrackingWord { onTouchCancelled?() }
         isTrackingWord = false
         holdReady = false
+        isPulling = false
         trackedTouch = nil
         if state == .possible { state = .failed }
         else if state == .began || state == .changed { state = .cancelled }
+    }
+}
+
+enum PassagePullDecision {
+    enum Intent: Equatable { case pending, pull, extend, scroll }
+    static let activationDistance: CGFloat = 56
+
+    /// Time is deliberately absent. A pull from completed highlights may pause,
+    /// inch forward, or reverse before release. New-word drags use their own rule.
+    static func intent(dx: CGFloat, dy: CGFloat, canExtend: Bool) -> Intent {
+        guard dx.isFinite, dy.isFinite else { return .scroll }
+        guard max(abs(dx), abs(dy)) >= 8 else { return .pending }
+        if dy > 0 && dy >= abs(dx) * 1.25 { return .pull }
+        return canExtend ? .extend : .scroll
+    }
+
+    static func progress(distance: CGFloat) -> CGFloat {
+        guard distance.isFinite else { return 0 }
+        return min(1, max(0, distance / activationDistance))
     }
 }
 

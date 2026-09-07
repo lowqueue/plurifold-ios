@@ -1,4 +1,47 @@
 import Foundation
+import NaturalLanguage
+
+enum DefinitionSelection {
+    /// Keep saved-word classification independent of dictionary lookup. Tokenization
+    /// helps with unspaced scripts; unsupported tokenizers still need to recognize
+    /// an ordinary phrase containing separate words.
+    static func kind(for text: String, languageCode: String) -> String {
+        let separatedWords = text.components(separatedBy: .whitespacesAndNewlines).filter {
+            $0.unicodeScalars.contains { CharacterSet.alphanumerics.contains($0) }
+        }.count
+        return max(separatedWords, wordCount(in: text, languageCode: languageCode)) > 1 ? "phrase" : "word"
+    }
+
+    /// A trailing comma or sentence punctuation should not prevent lookup of an
+    /// Estonian or Georgian word. Send only the normalized lexical form, keeping
+    /// the original selection untouched for saves and contextual AI explanations.
+    static func dictionaryTerm(for text: String, languageCode: String) -> String? {
+        let trimmed = text.precomposedStringWithCanonicalMapping
+            .trimmingCharacters(in: CharacterSet.whitespacesAndNewlines.union(.punctuationCharacters))
+        guard !trimmed.isEmpty, trimmed.utf16.count <= 80,
+              trimmed.range(of: #"^[\p{L}\p{M}\p{N}]+(?:['’·-][\p{L}\p{M}\p{N}]+)*$"#,
+                            options: .regularExpression) != nil else { return nil }
+        // A Japanese phrase may have no spaces, unlike the current other languages.
+        if languageCode.lowercased().hasPrefix("ja"), wordCount(in: trimmed, languageCode: languageCode) > 1 {
+            return nil
+        }
+        return trimmed
+    }
+
+    private static func wordCount(in text: String, languageCode: String) -> Int {
+        let tokenizer = NLTokenizer(unit: .word)
+        tokenizer.string = text
+        tokenizer.setLanguage(NLLanguage(rawValue: String(languageCode.lowercased().prefix(2))))
+        var words = 0
+        tokenizer.enumerateTokens(in: text.startIndex..<text.endIndex) { range, _ in
+            if text[range].unicodeScalars.contains(where: { CharacterSet.alphanumerics.contains($0) }) {
+                words += 1
+            }
+            return words < 2
+        }
+        return words
+    }
+}
 
 /// A saved meaning belongs to its language, term kind, and variety. Do not borrow
 /// a different dialect's definition merely because its spelling is identical.

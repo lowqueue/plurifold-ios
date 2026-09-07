@@ -2,7 +2,24 @@
 
 Updated on 2026-09-07. The development workspace runs Linux and has no Xcode or native iOS simulator. Historical build results and current source checks are separated below.
 
-## Current dictionary and desktop-definition reuse update
+## Current pull gesture and dictionary-first details
+
+- Replaced the bottom Explain bar with a 44-point control positioned beside a visible selected line. A new downward touch on the completed highlight or its control shows continuous distance progress. Release after 56 points opens details; pulling back before release cancels. There is no velocity requirement or maximum hold duration. A tap on the nearby control and native VoiceOver Study selection actions also open details.
+- New-word phrase dragging keeps its 0.20-second hold, joined highlights, and word-crossing haptics. The reader's scroll recognizer retains priority outside recognized selection interactions. The video sentence-study view uses the same pull gesture and maps its selection into the original document. The 0.45-second playback hold is unchanged.
+- Details opening calls only the dictionary endpoint. Cached and newly generated AI explanations require Explain with AI. Dictionary is first, with any saved meaning below it. The From this lesson panel is removed. Dictionary retry does not discard an AI answer or saved state.
+- Individual-word dictionary eligibility now handles surrounding punctuation independently of saved-word classification. It retains internal apostrophes, hyphens, and middle dots, rejects phrases/URLs, normalizes composed accents, and tokenizes Japanese to distinguish unspaced phrases.
+
+Completed checks:
+
+- All 44 Swift files grammar-parse without errors. Regenerating the project validates 120 object references and confirms the existing 34 app and ten test source memberships. No project-file change was needed.
+- Seven focused XCTest methods were added for slow/reversed pulls, directional intent, invalid geometry, Estonian/Georgian punctuation, endpoint term rules, and Japanese phrase eligibility. The suite contains 86 methods. These tests have not been executed in Linux; Codemagic must compile and run them.
+- Live read-only dictionary adapter probes returned Estonian olen → olema, Tere → tere, and lapsed → laps; Georgian გამარჯობა, ია, არის, and ბავშვი also returned entries. ბავშვებო had no entry. Most cold probes took 5–7 seconds. These checks establish example coverage, not complete coverage of inflections. The existing API and native Codable/source-link contract were inspected; no server code change was needed.
+- Recent server activity included successful AI requests but no dictionary requests in the returned log sample. That is consistent with an older installed app, but does not establish which build or words the user tested. The previously published dictionary server remains in place.
+- Whitespace checks pass. Signing, API model profiles, website code, icon assets, and account schemas are unchanged.
+
+Device checks: a very slow pull and retreat; a fast pull; tapping the nearby control; ordinary scrolling; multiline phrase preservation; short-sentence placement; VoiceOver and larger text; dictionary-first loading and missing/unavailable states; explicit AI including a saved desktop lookup. Native rendering, gesture arbitration, haptic feel, and XCTest still require Codemagic and the iPhone.
+
+## Previous dictionary and desktop-definition reuse update
 
 - Saved account meanings now display immediately in lesson word details, including original saved context. Matching retains language, variety and word/phrase boundaries. Foreground return refreshes desktop edits after native writes finish.
 - Dictionary lookup and read-only AI-cache lookup run concurrently. New generation uses the explicit Explain in this passage action. Dictionary senses can be saved independently, retaining contributor/source/license attribution and an excerpt/formatting-change notice.
@@ -134,7 +151,7 @@ The prepared course catalog contained four course collections with 75 entries. T
 
 ## Native test gate still to run
 
-The **Plurifold - TestFlight** workflow runs all 48 current tests before signing and uploading the IPA.
+The **Plurifold - TestFlight** workflow runs the current XCTest suite before signing and uploading the IPA. The current method count and unexecuted local checks are recorded at the top of this file.
 
 The supplied Codemagic log establishes native compilation and simulator test execution for its own source revision. This Linux workspace can validate Swift grammar but cannot run Xcode or the new regression tests. The reader/course update still requires Codemagic verification and a device check.
 
