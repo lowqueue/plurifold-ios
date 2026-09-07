@@ -1,0 +1,332 @@
+{
+  "courses": [
+    {
+      "id": "italian-original-stories",
+      "title": "Italian, one story at a time.",
+      "subtitle": "Small moments. Useful expressions. Room to explore.",
+      "languageName": "Italian",
+      "languageCode": "it-IT",
+      "symbol": "sun.horizon",
+      "lessons": [
+        {
+          "id": "original-caffe-bologna",
+          "title": "Un caffè a Bologna",
+          "subtitle": "Beginner · A small café, a first conversation.",
+          "minutes": 3,
+          "paragraphs": [
+            {
+              "id": "original-caffe-bologna-p1",
+              "text": "Sono a Bologna.",
+              "translation": "I am in Bologna."
+            },
+            {
+              "id": "original-caffe-bologna-p2",
+              "text": "Entro in un piccolo bar.",
+              "translation": "I go into a small café."
+            },
+            {
+              "id": "original-caffe-bologna-p3",
+              "text": "Il cameriere mi saluta.",
+              "translation": "The waiter greets me."
+            },
+            {
+              "id": "original-caffe-bologna-p4",
+              "text": "Ordino un caffè.",
+              "translation": "I order a coffee."
+            },
+            {
+              "id": "original-caffe-bologna-p5",
+              "text": "Parliamo della città.",
+              "translation": "We talk about the city."
+            },
+            {
+              "id": "original-caffe-bologna-p6",
+              "text": "La mia mattina comincia con una conversazione.",
+              "translation": "My morning begins with a conversation."
+            }
+          ],
+          "vocabulary": [
+            {
+              "id": "original-caffe-bologna-w1",
+              "term": "sono",
+              "meaning": "I am",
+              "note": "Present tense of essere. Here the speaker is talking about themself.",
+              "example": "Sono a Bologna."
+            },
+            {
+              "id": "original-caffe-bologna-w2",
+              "term": "entro",
+              "meaning": "I enter; I go in",
+              "note": "Present tense of entrare. Italian often leaves out io because the verb already identifies the speaker.",
+              "example": "Entro in un piccolo bar."
+            },
+            {
+              "id": "original-caffe-bologna-w3",
+              "term": "piccolo",
+              "meaning": "small",
+              "note": "An adjective agreeing with the masculine singular noun bar.",
+              "example": "Entro in un piccolo bar."
+            },
+            {
+              "id": "original-caffe-bologna-w4",
+              "term": "bar",
+              "meaning": "café; bar",
+              "note": "In Italy, a bar often serves coffee and pastries as well as drinks.",
+              "example": "Entro in un piccolo bar."
+            },
+            {
+              "id": "original-caffe-bologna-w5",
+              "term": "cameriere",
+              "meaning": "waiter",
+              "note": "A masculine singular noun: il cameriere.",
+              "example": "Il cameriere mi saluta."
+            },
+            {
+              "id": "original-caffe-bologna-w6",
+              "term": "saluta",
+              "meaning": "greets",
+              "note": "Present tense of salutare. Mi saluta means “greets me.”",
+              "example": "Il cameriere mi saluta."
+            },
+            {
+              "id": "original-caffe-bologna-w7",
+              "term": "ordino",
+              "meaning": "I order",
+              "note": "Present tense of ordinare. Useful when asking for food or drinks.",
+              "example": "Ordino un caffè."
+            },
+            {
+              "id": "original-caffe-bologna-w8",
+              "term": "caffè",
+              "meaning": "coffee",
+              "note": "The accent stays on the final è. Un caffè usually means an espresso in an Italian café.",
+              "example": "Ordino un caffè."
+            },
+            {
+              "id": "original-caffe-bologna-w9",
+              "term": "parliamo",
+              "meaning": "we talk; we speak",
+              "note": "Present tense of parlare. The ending -iamo marks “we.”",
+              "example": "Parliamo della città."
+            },
+            {
+              "id": "original-caffe-bologna-w10",
+              "term": "città",
+              "meaning": "city",
+              "note": "A feminine noun with the same form in singular and plural: la città, le città.",
+              "example": "Parliamo della città."
+            },
+            {
+              "id": "original-caffe-bologna-w11",
+              "term": "mattina",
+              "meaning": "morning",
+              "note": "A feminine noun. La mia mattina means “my morning.”",
+              "example": "La mia mattina comincia con una conversazione."
+            },
+            {
+              "id": "original-caffe-bologna-w12",
+              "term": "conversazione",
+              "meaning": "conversation",
+              "note": "A feminine noun: una conversazione.",
+              "example": "La mia mattina comincia con una conversazione."
+            }
+          ],
+          "questions": [
+            {
+              "id": "original-caffe-bologna-q1",
+              "prompt": "Where does the speaker go?",
+              "options": [
+                "Into a small café",
+                "Into a train station",
+                "Into a library"
+              ],
+              "answerIndex": 0,
+              "explanation": "“Entro in un piccolo bar” means “I go into a small café.”"
+            },
+            {
+              "id": "original-caffe-bologna-q2",
+              "prompt": "What does the speaker order?",
+              "options": [
+                "A tea",
+                "A coffee",
+                "A sandwich"
+              ],
+              "answerIndex": 1,
+              "explanation": "“Ordino un caffè” means “I order a coffee.”"
+            },
+            {
+              "id": "original-caffe-bologna-q3",
+              "prompt": "What do they talk about?",
+              "options": [
+                "The weather",
+                "Their families",
+                "The city"
+              ],
+              "answerIndex": 2,
+              "explanation": "“Parliamo della città” means “We talk about the city.”"
+            }
+          ]
+        },
+        {
+          "id": "demo-bologna",
+          "title": "Una mattina a Bologna",
+          "subtitle": "ILR 1 · Find a city through a conversation.",
+          "minutes": 5,
+          "paragraphs": [
+            {
+              "id": "demo-bologna-p1",
+              "text": "Quando sono arrivato a Bologna, pioveva appena.",
+              "translation": "When I arrived in Bologna, it was barely raining."
+            },
+            {
+              "id": "demo-bologna-p2",
+              "text": "Le strade brillavano sotto i portici e dal bar all’angolo usciva il profumo del caffè.",
+              "translation": "The streets gleamed beneath the arcades, and the aroma of coffee drifted from the café on the corner."
+            },
+            {
+              "id": "demo-bologna-p3",
+              "text": "Volevo trovare un posto tranquillo per ascoltare la città, ma il cameriere mi ha subito rivolto la parola.",
+              "translation": "I wanted to find a quiet place to listen to the city, but the waiter immediately spoke to me."
+            },
+            {
+              "id": "demo-bologna-p4",
+              "text": "«È la prima volta che viene qui?» mi ha chiesto.",
+              "translation": "“Is this your first time here?” he asked me."
+            },
+            {
+              "id": "demo-bologna-p5",
+              "text": "Ho risposto di sì, e nel giro di pochi minuti mi stava già spiegando quali quartieri visitare e dove mangiare bene senza spendere troppo.",
+              "translation": "I said yes, and within a few minutes he was already explaining which neighborhoods to visit and where to eat well without spending too much."
+            },
+            {
+              "id": "demo-bologna-p6",
+              "text": "È stato allora che ho capito una cosa semplice: a volte una città comincia da una conversazione.",
+              "translation": "That was when I realized something simple: sometimes a city begins with a conversation."
+            }
+          ],
+          "vocabulary": [
+            {
+              "id": "demo-bologna-w1",
+              "term": "quando",
+              "meaning": "when",
+              "note": "A conjunction introducing the time something happens.",
+              "example": "Quando sono arrivato a Bologna, pioveva appena."
+            },
+            {
+              "id": "demo-bologna-w2",
+              "term": "arrivato",
+              "meaning": "arrived",
+              "note": "Past participle of arrivare. Sono arrivato describes the completed arrival.",
+              "example": "Quando sono arrivato a Bologna, pioveva appena."
+            },
+            {
+              "id": "demo-bologna-w3",
+              "term": "pioveva",
+              "meaning": "it was raining",
+              "note": "The imperfetto places the rain in the background while the arrival is the completed event.",
+              "example": "Quando sono arrivato a Bologna, pioveva appena."
+            },
+            {
+              "id": "demo-bologna-w4",
+              "term": "appena",
+              "meaning": "just; barely",
+              "note": "Here, appena softens the rain: it was barely raining.",
+              "example": "Quando sono arrivato a Bologna, pioveva appena."
+            },
+            {
+              "id": "demo-bologna-w5",
+              "term": "brillavano",
+              "meaning": "were shining",
+              "note": "Imperfetto of brillare. It describes the streets in the background of the story.",
+              "example": "Le strade brillavano sotto i portici e dal bar all’angolo usciva il profumo del caffè."
+            },
+            {
+              "id": "demo-bologna-w6",
+              "term": "portici",
+              "meaning": "arcades; covered walkways",
+              "note": "Plural of portico. The stress is on the first syllable: /ˈpɔrtitʃi/.",
+              "example": "Le strade brillavano sotto i portici e dal bar all’angolo usciva il profumo del caffè."
+            },
+            {
+              "id": "demo-bologna-w7",
+              "term": "angolo",
+              "meaning": "corner",
+              "note": "All’angolo means “on the corner” in this sentence.",
+              "example": "Le strade brillavano sotto i portici e dal bar all’angolo usciva il profumo del caffè."
+            },
+            {
+              "id": "demo-bologna-w8",
+              "term": "profumo",
+              "meaning": "aroma; scent",
+              "note": "Il profumo del caffè means “the aroma of coffee.”",
+              "example": "Le strade brillavano sotto i portici e dal bar all’angolo usciva il profumo del caffè."
+            },
+            {
+              "id": "demo-bologna-w9",
+              "term": "tranquillo",
+              "meaning": "quiet; peaceful",
+              "note": "An adjective describing the masculine noun posto, “place.”",
+              "example": "Volevo trovare un posto tranquillo per ascoltare la città, ma il cameriere mi ha subito rivolto la parola."
+            },
+            {
+              "id": "demo-bologna-w10",
+              "term": "cameriere",
+              "meaning": "waiter",
+              "note": "The person who begins the conversation with the visitor.",
+              "example": "Volevo trovare un posto tranquillo per ascoltare la città, ma il cameriere mi ha subito rivolto la parola."
+            },
+            {
+              "id": "demo-bologna-w11",
+              "term": "quartieri",
+              "meaning": "neighborhoods",
+              "note": "Plural of quartiere. The waiter recommends places to explore.",
+              "example": "Ho risposto di sì, e nel giro di pochi minuti mi stava già spiegando quali quartieri visitare e dove mangiare bene senza spendere troppo."
+            },
+            {
+              "id": "demo-bologna-w12",
+              "term": "conversazione",
+              "meaning": "conversation",
+              "note": "The final sentence connects discovering a city with talking to someone.",
+              "example": "È stato allora che ho capito una cosa semplice: a volte una città comincia da una conversazione."
+            }
+          ],
+          "questions": [
+            {
+              "id": "demo-bologna-q1",
+              "prompt": "What was the weather like when the narrator arrived?",
+              "options": [
+                "It was snowing",
+                "It was raining lightly",
+                "It was very sunny"
+              ],
+              "answerIndex": 1,
+              "explanation": "“Pioveva appena” places light rain in the background of the arrival."
+            },
+            {
+              "id": "demo-bologna-q2",
+              "prompt": "Who starts the conversation?",
+              "options": [
+                "The waiter",
+                "Another visitor",
+                "The narrator"
+              ],
+              "answerIndex": 0,
+              "explanation": "The narrator says the waiter “mi ha subito rivolto la parola”: he immediately spoke to me."
+            },
+            {
+              "id": "demo-bologna-q3",
+              "prompt": "What does the narrator realize at the end?",
+              "options": [
+                "A city is best explored alone",
+                "Good coffee is always expensive",
+                "A city can begin with a conversation"
+              ],
+              "answerIndex": 2,
+              "explanation": "The closing thought is “a volte una città comincia da una conversazione.”"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

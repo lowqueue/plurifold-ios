@@ -1,0 +1,515 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {};
+	objectVersion = 56;
+	objects = {
+		91D3016F519CF3CC3A4036A1 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			name = PlurifoldApp.swift;
+			path = Plurifold/App/PlurifoldApp.swift;
+			sourceTree = SOURCE_ROOT;
+		};
+		73FEF8B1AC743D430673C4C6 = {
+			isa = PBXBuildFile;
+			fileRef = 91D3016F519CF3CC3A4036A1;
+		};
+		398BC9AAAA4AE036C54B4E26 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			name = SpeechPlayer.swift;
+			path = Plurifold/App/SpeechPlayer.swift;
+			sourceTree = SOURCE_ROOT;
+		};
+		F197E690FA9B9CA7CA0CD842 = {
+			isa = PBXBuildFile;
+			fileRef = 398BC9AAAA4AE036C54B4E26;
+		};
+		45FDF515BE2FBDD1DA7F1820 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			name = StudyCatalog.swift;
+			path = Plurifold/Models/StudyCatalog.swift;
+			sourceTree = SOURCE_ROOT;
+		};
+		942F1C1BB79653E18F634AA6 = {
+			isa = PBXBuildFile;
+			fileRef = 45FDF515BE2FBDD1DA7F1820;
+		};
+		04EF4073610BF239A5FE9CCD = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			name = StudyStore.swift;
+			path = Plurifold/Models/StudyStore.swift;
+			sourceTree = SOURCE_ROOT;
+		};
+		801E2D711DD13164ED25902E = {
+			isa = PBXBuildFile;
+			fileRef = 04EF4073610BF239A5FE9CCD;
+		};
+		28695C701D4556AE7F77EA26 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			name = LibraryView.swift;
+			path = Plurifold/Views/LibraryView.swift;
+			sourceTree = SOURCE_ROOT;
+		};
+		925FBE29E4DACFD93A142C87 = {
+			isa = PBXBuildFile;
+			fileRef = 28695C701D4556AE7F77EA26;
+		};
+		74BA000BB8654EDBD9234CB5 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			name = PracticeView.swift;
+			path = Plurifold/Views/PracticeView.swift;
+			sourceTree = SOURCE_ROOT;
+		};
+		50F9201B28DF0EE4A22F8C73 = {
+			isa = PBXBuildFile;
+			fileRef = 74BA000BB8654EDBD9234CB5;
+		};
+		A496D34654A89E2D75E0C8E8 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			name = ProgressScreen.swift;
+			path = Plurifold/Views/ProgressScreen.swift;
+			sourceTree = SOURCE_ROOT;
+		};
+		842F52A8E5ECFA0C28985415 = {
+			isa = PBXBuildFile;
+			fileRef = A496D34654A89E2D75E0C8E8;
+		};
+		94B76FF09A0E87A3AA6A566D = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			name = ReaderView.swift;
+			path = Plurifold/Views/ReaderView.swift;
+			sourceTree = SOURCE_ROOT;
+		};
+		C8D5E789B0EAA4C9DAD54F1F = {
+			isa = PBXBuildFile;
+			fileRef = 94B76FF09A0E87A3AA6A566D;
+		};
+		5C27279515916A0EF6D55024 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			name = Theme.swift;
+			path = Plurifold/Views/Theme.swift;
+			sourceTree = SOURCE_ROOT;
+		};
+		762E183886E467C74CEB4DA9 = {
+			isa = PBXBuildFile;
+			fileRef = 5C27279515916A0EF6D55024;
+		};
+		EB736CFFA0B82792D7C2658E = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			name = WordsView.swift;
+			path = Plurifold/Views/WordsView.swift;
+			sourceTree = SOURCE_ROOT;
+		};
+		85AAF029264BBF1D4BC9F171 = {
+			isa = PBXBuildFile;
+			fileRef = EB736CFFA0B82792D7C2658E;
+		};
+		A992EB019FD3F1296346B3F3 = {
+			isa = PBXFileReference;
+			lastKnownFileType = text.xml;
+			name = PrivacyInfo.xcprivacy;
+			path = Plurifold/Resources/PrivacyInfo.xcprivacy;
+			sourceTree = SOURCE_ROOT;
+		};
+		1D024FD6ADAC915471BD21FD = {
+			isa = PBXBuildFile;
+			fileRef = A992EB019FD3F1296346B3F3;
+		};
+		C5ADB574442B4FC237C5578E = {
+			isa = PBXFileReference;
+			lastKnownFileType = text.json;
+			name = catalog.json;
+			path = Plurifold/Resources/catalog.json;
+			sourceTree = SOURCE_ROOT;
+		};
+		CFF71E6924D30AECFF8BC922 = {
+			isa = PBXBuildFile;
+			fileRef = C5ADB574442B4FC237C5578E;
+		};
+		AEB66B25AAAAAE17E5207641 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			name = StudyStoreTests.swift;
+			path = PlurifoldTests/StudyStoreTests.swift;
+			sourceTree = SOURCE_ROOT;
+		};
+		0FB00C0B29D9AE6685ACF9F0 = {
+			isa = PBXBuildFile;
+			fileRef = AEB66B25AAAAAE17E5207641;
+		};
+		81F31879437340D5CD6ED968 = {
+			isa = PBXFileReference;
+			explicitFileType = wrapper.application;
+			includeInIndex = 0;
+			path = Plurifold.app;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		70F09BF32F6D77A92FF191B4 = {
+			isa = PBXFileReference;
+			explicitFileType = wrapper.cfbundle;
+			includeInIndex = 0;
+			path = PlurifoldTests.xctest;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		085ED06E573690BA3A56BC1E = {
+			isa = PBXGroup;
+			children = (
+				91D3016F519CF3CC3A4036A1,
+				398BC9AAAA4AE036C54B4E26,
+				45FDF515BE2FBDD1DA7F1820,
+				04EF4073610BF239A5FE9CCD,
+				28695C701D4556AE7F77EA26,
+				74BA000BB8654EDBD9234CB5,
+				A496D34654A89E2D75E0C8E8,
+				94B76FF09A0E87A3AA6A566D,
+				5C27279515916A0EF6D55024,
+				EB736CFFA0B82792D7C2658E,
+				A992EB019FD3F1296346B3F3,
+				C5ADB574442B4FC237C5578E,
+			);
+			name = Plurifold;
+			sourceTree = "<group>";
+		};
+		D60409337774CCE94860379A = {
+			isa = PBXGroup;
+			children = (
+				AEB66B25AAAAAE17E5207641,
+			);
+			name = PlurifoldTests;
+			sourceTree = "<group>";
+		};
+		6F7199ED7B63CDA338A0FB82 = {
+			isa = PBXGroup;
+			children = (
+				81F31879437340D5CD6ED968,
+				70F09BF32F6D77A92FF191B4,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		CC5D242D023A9271190EA7C6 = {
+			isa = PBXGroup;
+			children = (
+				085ED06E573690BA3A56BC1E,
+				D60409337774CCE94860379A,
+				6F7199ED7B63CDA338A0FB82,
+			);
+			sourceTree = "<group>";
+		};
+		6ACE7BC297BF23705D4E5F56 = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				73FEF8B1AC743D430673C4C6,
+				F197E690FA9B9CA7CA0CD842,
+				942F1C1BB79653E18F634AA6,
+				801E2D711DD13164ED25902E,
+				925FBE29E4DACFD93A142C87,
+				50F9201B28DF0EE4A22F8C73,
+				842F52A8E5ECFA0C28985415,
+				C8D5E789B0EAA4C9DAD54F1F,
+				762E183886E467C74CEB4DA9,
+				85AAF029264BBF1D4BC9F171,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		13D58F750C9F7A867F986420 = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = ();
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		EB12F685944315C425ABFF58 = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1D024FD6ADAC915471BD21FD,
+				CFF71E6924D30AECFF8BC922,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DE2F315977E833CC2ECF764D = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0FB00C0B29D9AE6685ACF9F0,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		09701C1ED473FC02B8A57D80 = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = ();
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		41EB5A06123FA83769D9447E = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = ();
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		184B519F8E1416CCE38CFFD7 = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_TESTABILITY = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				ONLY_ACTIVE_ARCH = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = (
+					DEBUG,
+					"$(inherited)",
+				);
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		A824290273A346217D9BE6F4 = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		1922B098E983995960BE56B0 = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				184B519F8E1416CCE38CFFD7,
+				A824290273A346217D9BE6F4,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		0D9B6C467828201280D620A8 = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				"CODE_SIGNING_ALLOWED[sdk=iphonesimulator*]" = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.plurifold.ios.prototype;
+				INFOPLIST_KEY_CFBundleDisplayName = Plurifold;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+			};
+			name = Debug;
+		};
+		E532E4CDC1E6865CE523475E = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				"CODE_SIGNING_ALLOWED[sdk=iphonesimulator*]" = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.plurifold.ios.prototype;
+				INFOPLIST_KEY_CFBundleDisplayName = Plurifold;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+			};
+			name = Release;
+		};
+		7FA7C6DD60DC323C7F3FA76C = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0D9B6C467828201280D620A8,
+				E532E4CDC1E6865CE523475E,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		2D78CCEA355AAA4DECA10BA5 = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				"CODE_SIGNING_ALLOWED[sdk=iphonesimulator*]" = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.plurifold.ios.prototype.tests;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Plurifold.app/Plurifold";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+			};
+			name = Debug;
+		};
+		F1D4FEDE61515AFDB9B202CA = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				"CODE_SIGNING_ALLOWED[sdk=iphonesimulator*]" = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.plurifold.ios.prototype.tests;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Plurifold.app/Plurifold";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+			};
+			name = Release;
+		};
+		3AC24B37B5C6634D049790CE = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2D78CCEA355AAA4DECA10BA5,
+				F1D4FEDE61515AFDB9B202CA,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		8C1A045E96B998B40533C7FF = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7FA7C6DD60DC323C7F3FA76C;
+			buildPhases = (
+				6ACE7BC297BF23705D4E5F56,
+				13D58F750C9F7A867F986420,
+				EB12F685944315C425ABFF58,
+			);
+			buildRules = ();
+			dependencies = ();
+			name = Plurifold;
+			productName = Plurifold;
+			productReference = 81F31879437340D5CD6ED968;
+			productType = "com.apple.product-type.application";
+		};
+		7BBE231E09E510FA51430243 = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 244210E48437B6556980A702;
+			proxyType = 1;
+			remoteGlobalIDString = 8C1A045E96B998B40533C7FF;
+			remoteInfo = Plurifold;
+		};
+		34C9FB4242E844EF07B6170B = {
+			isa = PBXTargetDependency;
+			target = 8C1A045E96B998B40533C7FF;
+			targetProxy = 7BBE231E09E510FA51430243;
+		};
+		2ADDEE89B29C55E11126D89F = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3AC24B37B5C6634D049790CE;
+			buildPhases = (
+				DE2F315977E833CC2ECF764D,
+				09701C1ED473FC02B8A57D80,
+				41EB5A06123FA83769D9447E,
+			);
+			buildRules = ();
+			dependencies = (
+				34C9FB4242E844EF07B6170B,
+			);
+			name = PlurifoldTests;
+			productName = PlurifoldTests;
+			productReference = 70F09BF32F6D77A92FF191B4;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		244210E48437B6556980A702 = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					8C1A045E96B998B40533C7FF = {
+						CreatedOnToolsVersion = 15.0;
+					};
+					2ADDEE89B29C55E11126D89F = {
+						CreatedOnToolsVersion = 15.0;
+						TestTargetID = 8C1A045E96B998B40533C7FF;
+					};
+				};
+			};
+			buildConfigurationList = 1922B098E983995960BE56B0;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = CC5D242D023A9271190EA7C6;
+			productRefGroup = 6F7199ED7B63CDA338A0FB82;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				8C1A045E96B998B40533C7FF,
+				2ADDEE89B29C55E11126D89F,
+			);
+		};
+	};
+	rootObject = 244210E48437B6556980A702;
+}
