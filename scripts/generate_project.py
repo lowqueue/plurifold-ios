@@ -100,7 +100,9 @@ def validate_graph() -> None:
     for item in OBJECTS.values():
         check(item)
         if item["isa"] == "PBXFileReference" and item["sourceTree"] == "SOURCE_ROOT":
-            if not (ROOT / item["path"]).is_file():
+            path = ROOT / item["path"]
+            is_asset_catalog = item.get("lastKnownFileType") == "folder.assetcatalog"
+            if not (path.is_dir() if is_asset_catalog else path.is_file()):
                 raise FileNotFoundError(item["path"])
         if item["isa"].endswith("BuildPhase"):
             members = item.get("files", [])
@@ -161,13 +163,16 @@ def main() -> None:
     app_sources = sorted((ROOT / "Plurifold").rglob("*.swift"))
     test_sources = sorted((ROOT / "PlurifoldTests").rglob("*.swift"))
     resources = sorted(path for path in (ROOT / "Plurifold").rglob("*")
-                       if path.is_file() and path.name in {"catalog.json", "PrivacyInfo.xcprivacy"})
+                       if (path.is_file() and path.name in {"catalog.json", "PrivacyInfo.xcprivacy"})
+                       or (path.is_dir() and path.suffix == ".xcassets"))
     if not app_sources:
         raise SystemExit("No app Swift files found under Plurifold/.")
     if len([path for path in resources if path.name == "catalog.json"]) != 1:
         raise SystemExit("Exactly one catalog.json must be included in the app bundle.")
     if len([path for path in resources if path.name == "PrivacyInfo.xcprivacy"]) != 1:
         raise SystemExit("Exactly one app PrivacyInfo.xcprivacy is required.")
+    if not (ROOT / "Plurifold/Resources/Assets.xcassets/AppIcon.appiconset/Contents.json").is_file():
+        raise SystemExit("The AppIcon asset catalog is required. Run scripts/generate_app_icon.py.")
 
     app_refs, app_builds, test_refs, test_builds, resource_builds = [], [], [], [], []
     for path in app_sources:
@@ -175,7 +180,10 @@ def main() -> None:
         app_refs.append(file_ref)
         app_builds.append(add_build_file(path, file_ref))
     for path in resources:
-        file_ref = add_file(path, "text.json" if path.suffix == ".json" else "text.xml")
+        resource_type = {
+            ".json": "text.json", ".xcprivacy": "text.xml", ".xcassets": "folder.assetcatalog"
+        }[path.suffix]
+        file_ref = add_file(path, resource_type)
         app_refs.append(file_ref)
         resource_builds.append(add_build_file(path, file_ref))
     for path in test_sources:
@@ -217,14 +225,16 @@ def main() -> None:
     common_target = {
         "CODE_SIGN_STYLE": "Automatic", "CODE_SIGNING_ALLOWED[sdk=iphonesimulator*]": "NO",
         "CURRENT_PROJECT_VERSION": "1", "GENERATE_INFOPLIST_FILE": "YES",
-        "MARKETING_VERSION": "0.1.0", "PRODUCT_NAME": "$(TARGET_NAME)",
+        "MARKETING_VERSION": "1.0", "PRODUCT_NAME": "$(TARGET_NAME)",
         "SUPPORTED_PLATFORMS": "iphoneos iphonesimulator", "SUPPORTS_MACCATALYST": "NO",
         "TARGETED_DEVICE_FAMILY": "1,2", "SWIFT_EMIT_LOC_STRINGS": "YES",
     }
     app_configs = configurations("app", {
         **common_target,
         "PRODUCT_BUNDLE_IDENTIFIER": "com.plurifold.ios.prototype",
+        "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon",
         "INFOPLIST_KEY_CFBundleDisplayName": "Plurifold",
+        "INFOPLIST_KEY_ITSAppUsesNonExemptEncryption": "NO",
         "INFOPLIST_KEY_LSApplicationCategoryType": "public.app-category.education",
         "INFOPLIST_KEY_UIApplicationSceneManifest_Generation": "YES",
         "INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents": "YES",
