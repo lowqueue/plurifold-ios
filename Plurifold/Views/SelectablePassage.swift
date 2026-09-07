@@ -92,7 +92,7 @@ struct SelectablePassage: UIViewRepresentable {
 
     func sizeThatFits(_ proposal: ProposedViewSize, uiView: PassageTextView, context: Context) -> CGSize? {
         guard let width = proposal.width, width.isFinite, width > 0 else { return nil }
-        let measured = uiView.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude))
+        let measured = uiView.sizeThatFits(CGSize(width: width, height: CGFloat.greatestFiniteMagnitude))
         return CGSize(width: width, height: ceil(measured.height))
     }
 
@@ -643,7 +643,7 @@ final class PassageTextView: UITextView {
     override init(frame: CGRect, textContainer: NSTextContainer?) {
         let storage = NSTextStorage()
         let manager = PassageHighlightLayoutManager()
-        let container = NSTextContainer(size: CGSize(width: 0, height: .greatestFiniteMagnitude))
+        let container = NSTextContainer(size: CGSize(width: 0, height: CGFloat.greatestFiniteMagnitude))
         container.widthTracksTextView = true
         container.heightTracksTextView = false
         storage.addLayoutManager(manager)
