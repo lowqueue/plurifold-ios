@@ -146,6 +146,7 @@ struct SelectablePassage: UIViewRepresentable {
             let highlightsChanged = textChanged || renderedHighlights != parent.highlights
             guard textChanged || fontChanged || wordsChanged || highlightsChanged else { return }
             if textChanged {
+                view.highlightLayoutManager.cancelReaction()
                 utf16Length = parent.text.utf16.count
                 selectionGesture?.cancelTracking()
                 anchorRange = nil
@@ -205,12 +206,14 @@ struct SelectablePassage: UIViewRepresentable {
                 }
             }
             let words = marks(for: wordRanges)
+            manager.cancelReaction()
             manager.wordMarks = words
             manager.savedMarks = marks(for: savedRanges)
             manager.activeRange = activeRange
             wordGeometry = PassageWordGeometryIndex(hits: words.flatMap { mark in
                 mark.rectangles.map { PassageWordHit(range: mark.range, rect: $0) }
             })
+            manager.wordGeometry = wordGeometry
             manager.invalidateDisplay(forCharacterRange: NSRange(location: 0, length: utf16Length))
             geometryWidth = view.bounds.width
             needsWordGeometry = false
@@ -222,7 +225,10 @@ struct SelectablePassage: UIViewRepresentable {
             activeRange = range
             guard let manager = textView?.highlightLayoutManager else { return }
             manager.activeRange = range
-            for dirty in PassageTextSelection.changedDisplayRanges(previous: previous, current: range) {
+            if range == nil { manager.cancelReaction() }
+            for dirty in PassageTextSelection.highlightDisplayRanges(
+                previous: previous, current: range, words: wordRanges
+            ) {
                 manager.invalidateDisplay(forCharacterRange: dirty)
             }
         }
@@ -261,6 +267,7 @@ struct SelectablePassage: UIViewRepresentable {
             ) { [weak self] _ in
                 MainActor.assumeIsolated {
                     self?.selectionGesture?.cancelTracking()
+                    self?.textView?.highlightLayoutManager.cancelReaction()
                     self?.updateInteraction()
                 }
             }
@@ -297,6 +304,7 @@ struct SelectablePassage: UIViewRepresentable {
             wordFeedback.begin(at: word)
             selectionFeedback.prepare()
             setActiveRange(word)
+            view.highlightLayoutManager.react(to: word)
             pointerInWindow = view.convert(point, to: nil)
             return true
         }
@@ -332,8 +340,10 @@ struct SelectablePassage: UIViewRepresentable {
             // Selection can snap across a gap, but feedback waits until the
             // finger reaches a word. Track the endpoint, not phrase length,
             // so shortening and reversing a selection also give one tick.
-            if wordFeedback.move(to: wordGeometry.word(at: position, nearest: false)) {
+            let touchedWord = wordGeometry.word(at: position, nearest: false)
+            if wordFeedback.move(to: touchedWord) {
                 emitSelectionFeedback()
+                if let touchedWord { view.highlightLayoutManager.react(to: touchedWord) }
             }
         }
 
@@ -358,6 +368,7 @@ struct SelectablePassage: UIViewRepresentable {
         func cancelSelection() {
             stopAutoscroll()
             wordFeedback.reset()
+            textView?.highlightLayoutManager.cancelReaction()
             if anchorRange != nil { setActiveRange(previousRange) }
             previousRange = nil
             anchorRange = nil
@@ -484,6 +495,7 @@ struct SelectablePassage: UIViewRepresentable {
             selectionGesture?.cancelTracking()
             wordFeedback.reset()
             stopAutoscroll()
+            textView?.highlightLayoutManager.cancelReaction()
         }
 
         func teardown() {
@@ -546,6 +558,7 @@ struct PassageWordGeometryIndex {
     private struct Line {
         var bounds: CGRect
         var hits: [PassageWordHit]
+        var sourceRange: NSRange
     }
     private var lines: [Line] = []
 
@@ -558,8 +571,9 @@ struct PassageWordGeometryIndex {
             if let last = lines.last, abs(last.bounds.minY - hit.rect.minY) <= 1 {
                 lines[lines.count - 1].bounds = last.bounds.union(hit.rect)
                 lines[lines.count - 1].hits.append(hit)
+                lines[lines.count - 1].sourceRange = NSUnionRange(last.sourceRange, hit.range)
             } else {
-                lines.append(Line(bounds: hit.rect, hits: [hit]))
+                lines.append(Line(bounds: hit.rect, hits: [hit], sourceRange: hit.range))
             }
         }
     }
@@ -594,6 +608,36 @@ struct PassageWordGeometryIndex {
             return firstDistance < secondDistance
         }?.range
     }
+
+    /// Join selected neighbours across their spaces, stopping at line breaks
+    /// and at visually intervening unselected words (important for bidi text).
+    /// Only lines intersecting the requested display interval are inspected.
+    func selectionFragments(for range: NSRange, displaying displayRange: NSRange? = nil) -> [CGRect] {
+        let visibleRange = displayRange.map { NSIntersectionRange(range, $0) } ?? range
+        guard visibleRange.length > 0 else { return [] }
+        var lower = 0
+        var upper = lines.count
+        while lower < upper {
+            let middle = (lower + upper) / 2
+            if NSMaxRange(lines[middle].sourceRange) <= visibleRange.location { lower = middle + 1 }
+            else { upper = middle }
+        }
+        var result: [CGRect] = []
+        while lower < lines.count, lines[lower].sourceRange.location < NSMaxRange(visibleRange) {
+            var joined: CGRect?
+            for hit in lines[lower].hits {
+                if NSIntersectionRange(hit.range, range).length > 0 {
+                    joined = joined.map { $0.union(hit.rect) } ?? hit.rect
+                } else if let fragment = joined {
+                    result.append(fragment)
+                    joined = nil
+                }
+            }
+            if let joined { result.append(joined) }
+            lower += 1
+        }
+        return result
+    }
 }
 
 /// Cached rounded marks are painted under glyphs without modifying attributes.
@@ -602,6 +646,9 @@ final class PassageHighlightLayoutManager: NSLayoutManager {
     var wordMarks: [PassageHighlightMark] = []
     var savedMarks: [PassageHighlightMark] = []
     var activeRange: NSRange?
+    var wordGeometry = PassageWordGeometryIndex(hits: [])
+    private var reaction = PassageSelectionReactionState()
+    private var reactionLink: CADisplayLink?
 
     private let normal = UIColor { traits in
         traits.userInterfaceStyle == .dark
@@ -615,19 +662,56 @@ final class PassageHighlightLayoutManager: NSLayoutManager {
     }
     private let selected = UIColor { traits in
         traits.userInterfaceStyle == .dark
-            ? UIColor(red: 0.40, green: 0.74, blue: 0.92, alpha: 0.62)
-            : UIColor(red: 0.28, green: 0.63, blue: 0.87, alpha: 0.64)
+            ? UIColor(red: 0.27, green: 0.53, blue: 0.68, alpha: 1)
+            : UIColor(red: 0.53, green: 0.76, blue: 0.90, alpha: 1)
+    }
+
+    /// A short local lift is painted beneath the glyphs. It never transforms
+    /// the text view or changes line wrapping, and is silent for Reduce Motion.
+    func react(to word: NSRange) {
+        cancelReaction()
+        guard !UIAccessibility.isReduceMotionEnabled, !UIAccessibility.isVoiceOverRunning else { return }
+        reaction.begin(at: word, timestamp: CACurrentMediaTime())
+        invalidateDisplay(forCharacterRange: word)
+        let target = PassageReactionDisplayLinkTarget(manager: self)
+        let link = CADisplayLink(target: target, selector: #selector(PassageReactionDisplayLinkTarget.tick(_:)))
+        link.preferredFramesPerSecond = 60
+        link.add(to: .main, forMode: .common)
+        reactionLink = link
+    }
+
+    func cancelReaction() {
+        reactionLink?.invalidate()
+        reactionLink = nil
+        if let previous = reaction.range { invalidateDisplay(forCharacterRange: previous) }
+        reaction.clear()
+    }
+
+    fileprivate func advanceReaction(_ link: CADisplayLink) {
+        guard !UIAccessibility.isReduceMotionEnabled, !UIAccessibility.isVoiceOverRunning,
+              let range = reaction.range, let activeRange,
+              NSIntersectionRange(range, activeRange).length > 0,
+              reaction.isActive(at: CACurrentMediaTime()) else {
+            cancelReaction()
+            return
+        }
+        invalidateDisplay(forCharacterRange: range)
     }
 
     override func drawBackground(forGlyphRange glyphsToShow: NSRange, at origin: CGPoint) {
         super.drawBackground(forGlyphRange: glyphsToShow, at: origin)
         let characters = characterRange(forGlyphRange: glyphsToShow, actualGlyphRange: nil)
-        let clip = UIGraphicsGetCurrentContext()?.boundingBoxOfClipPath
+        guard let context = UIGraphicsGetCurrentContext() else { return }
+        let clip = context.boundingBoxOfClipPath
+        let fragments = activeRange.map { wordGeometry.selectionFragments(for: $0, displaying: characters) } ?? []
+        let activeRects = fragments.map {
+            $0.offsetBy(dx: origin.x, dy: origin.y).insetBy(dx: -0.5, dy: 1)
+        }
         func paint(_ mark: PassageHighlightMark, color: UIColor) {
             color.setFill()
             for rectangle in mark.rectangles {
                 let rect = rectangle.offsetBy(dx: origin.x, dy: origin.y).insetBy(dx: -0.5, dy: 1)
-                if let clip, !rect.intersects(clip) { continue }
+                if !rect.intersects(clip) { continue }
                 UIBezierPath(roundedRect: rect, cornerRadius: 3).fill()
             }
         }
@@ -640,22 +724,84 @@ final class PassageHighlightLayoutManager: NSLayoutManager {
             if NSMaxRange(wordMarks[middle].range) <= characters.location { lower = middle + 1 }
             else { upper = middle }
         }
-        var visibleWords: [PassageHighlightMark] = []
+        // Remove the separate blue/gold marks under the selected phrase so
+        // the joined fill has one color, including its spaces and rounded ends.
+        context.saveGState()
+        if !activeRects.isEmpty {
+            let exclusions = CGMutablePath()
+            exclusions.addRect(clip)
+            for rect in activeRects { exclusions.addRect(rect) }
+            context.addPath(exclusions)
+            context.clip(using: .evenOdd)
+        }
         while lower < wordMarks.count, wordMarks[lower].range.location < NSMaxRange(characters) {
             let mark = wordMarks[lower]
             paint(mark, color: normal)
-            visibleWords.append(mark)
             lower += 1
         }
         for mark in savedMarks where NSIntersectionRange(mark.range, characters).length > 0 {
             paint(mark, color: saved)
         }
-        if let activeRange {
-            for mark in visibleWords where NSIntersectionRange(mark.range, activeRange).length > 0 {
-                paint(mark, color: selected)
+        context.restoreGState()
+        selected.setFill()
+        for rect in activeRects where rect.intersects(clip) {
+            UIBezierPath(roundedRect: rect, cornerRadius: 5).fill()
+        }
+        if let range = reaction.range, let activeRange,
+           NSIntersectionRange(range, activeRange).length > 0 {
+            let lift = reaction.lift(at: CACurrentMediaTime())
+            if lift > 0 {
+                for fragment in wordGeometry.selectionFragments(for: range, displaying: characters) {
+                    let rect = fragment.offsetBy(dx: origin.x, dy: origin.y)
+                        .insetBy(dx: -0.5 - lift, dy: 1 - lift * 1.4)
+                    guard rect.intersects(clip) else { continue }
+                    selected.setFill()
+                    let bubble = UIBezierPath(roundedRect: rect, cornerRadius: 5 + lift)
+                    bubble.fill()
+                    UIColor.white.withAlphaComponent(0.12 * lift).setFill()
+                    bubble.fill()
+                }
             }
         }
     }
+}
+
+/// The display link retains only this proxy, so a view leaving the hierarchy
+/// cannot leave its text manager retained by an unfinished animation.
+private final class PassageReactionDisplayLinkTarget: NSObject {
+    weak var manager: PassageHighlightLayoutManager?
+    init(manager: PassageHighlightLayoutManager) { self.manager = manager }
+    @objc func tick(_ link: CADisplayLink) {
+        guard let manager else { link.invalidate(); return }
+        manager.advanceReaction(link)
+    }
+}
+
+/// Explicit lifecycle keeps an old word's pulse from surviving clear/cancel or
+/// firing later after the finger reverses onto another word.
+struct PassageSelectionReactionState {
+    private(set) var range: NSRange?
+    private var started: TimeInterval = 0
+    private let duration: TimeInterval = 0.26
+
+    mutating func begin(at range: NSRange, timestamp: TimeInterval) {
+        self.range = range
+        started = timestamp
+    }
+
+    func isActive(at timestamp: TimeInterval) -> Bool {
+        range != nil && timestamp >= started && timestamp - started < duration
+    }
+
+    func lift(at timestamp: TimeInterval) -> CGFloat {
+        guard isActive(at: timestamp) else { return 0 }
+        let progress = (timestamp - started) / duration
+        // A quick rounded rise, then a small settling rebound. Maximum lift is
+        // less than two points so neighbouring words remain easy to target.
+        return CGFloat(abs(sin(progress * .pi * 1.5)) * pow(1 - progress, 1.8) * 3)
+    }
+
+    mutating func clear() { range = nil }
 }
 
 final class PassageTextView: UITextView {
@@ -829,6 +975,22 @@ struct PassageWordFeedbackState {
 }
 
 enum PassageTextSelection {
+    /// Joined shapes also change rounding at the shared boundary, even if that
+    /// word remains selected. Repaint those few endpoint words, not the entire
+    /// anchor-to-finger interval, when a phrase grows, shrinks, or reverses.
+    static func highlightDisplayRanges(previous: NSRange?, current: NSRange?, words: [NSRange]) -> [NSRange] {
+        var dirty = changedDisplayRanges(previous: previous, current: current)
+        guard previous != current else { return dirty }
+        for range in [previous, current].compactMap({ $0 }) where range.length > 0 {
+            for offset in [range.location, NSMaxRange(range) - 1] {
+                if let word = wordRange(in: words, utf16Offset: offset, nearest: false), !dirty.contains(word) {
+                    dirty.append(word)
+                }
+            }
+        }
+        return dirty
+    }
+
     /// Only the newly added or removed ends need repainting during a drag.
     /// Repainting the anchor-to-finger union on every movement grows needlessly
     /// expensive for selections spanning a long transcript.

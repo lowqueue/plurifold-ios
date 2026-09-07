@@ -2,11 +2,14 @@ import SwiftUI
 
 struct LiveHomeView: View {
     @EnvironmentObject private var store: LiveLibraryStore
+    @EnvironmentObject private var studyScope: MobileStudyScope
 
-    private var catalog: MobileLanguageCatalog { MobileLanguageCatalog(courses: store.courses) }
+    private var languages: [MobileLanguageOption] {
+        MobileStudyLanguageList(courses: store.courses, words: store.words).languages
+    }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $studyScope.homePath) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     VStack(alignment: .leading, spacing: 8) {
@@ -14,7 +17,7 @@ struct LiveHomeView: View {
                         Text("Choose a language")
                             .font(.largeTitle.weight(.bold))
                             .foregroundStyle(Palette.ink)
-                        Text("Find your next lesson or continue a course.")
+                        Text("Your lessons, saved words, and review stay with the language you choose.")
                             .font(.subheadline)
                             .foregroundStyle(Palette.secondary)
                     }
@@ -25,11 +28,11 @@ struct LiveHomeView: View {
                             .studyCard()
                     }
 
-                    if store.isLoading && catalog.languages.isEmpty {
+                    if store.isLoading && languages.isEmpty {
                         ProgressView("Loading your languages…")
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 48)
-                    } else if catalog.languages.isEmpty {
+                    } else if languages.isEmpty {
                         ContentUnavailableView {
                             Label("Your languages", systemImage: "globe")
                         } description: {
@@ -39,10 +42,8 @@ struct LiveHomeView: View {
                         }
                     } else {
                         LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: 16)], spacing: 16) {
-                            ForEach(catalog.languages) { language in
-                                NavigationLink {
-                                    LiveLibraryView(languageCode: language.code, languageName: language.name)
-                                } label: {
+                            ForEach(languages) { language in
+                                Button { studyScope.selectLanguage(language) } label: {
                                     languageTile(language)
                                 }
                                 .buttonStyle(.plain)
@@ -57,9 +58,13 @@ struct LiveHomeView: View {
             .studyBackground()
             .navigationTitle("Home")
             .navigationBarTitleDisplayMode(.inline)
+            .navigationDestination(for: MobileLanguageOption.self) { language in
+                LiveLibraryView(languageCode: language.code, languageName: language.name)
+            }
             .refreshable { await store.refresh() }
             .task { if !store.hasLoaded { await store.refresh() } }
         }
+        .id(studyScope.homeRootID)
     }
 
     private func languageTile(_ language: MobileLanguageOption) -> some View {
@@ -78,15 +83,25 @@ struct LiveHomeView: View {
                 .font(.title3.weight(.semibold))
                 .foregroundStyle(Palette.ink)
                 .fixedSize(horizontal: false, vertical: true)
-            Text(language.contentDescription)
+            Text(language.contentDescription.isEmpty ? savedDescription(language) : language.contentDescription)
                 .font(.caption)
                 .foregroundStyle(Palette.secondary)
                 .fixedSize(horizontal: false, vertical: true)
+            if MobileLanguageKey.normalized(studyScope.language?.code) == MobileLanguageKey.normalized(language.code) {
+                Label("Selected", systemImage: "checkmark.circle.fill")
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(Palette.green)
+            }
         }
         .frame(maxWidth: .infinity, minHeight: 122, alignment: .topLeading)
         .studyCard()
         .contentShape(RoundedRectangle(cornerRadius: 12))
         .accessibilityElement(children: .combine)
-        .accessibilityHint("Opens \(language.name) courses and lessons")
+        .accessibilityHint("Selects \(language.name) for lessons, words, and review")
+    }
+
+    private func savedDescription(_ language: MobileLanguageOption) -> String {
+        let count = MobileVocabularyIndex(words: store.words, languageCode: language.code).words.count
+        return "\(count) saved \(count == 1 ? "word" : "words")"
     }
 }

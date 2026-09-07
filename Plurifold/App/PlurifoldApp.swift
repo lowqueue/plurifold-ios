@@ -32,22 +32,36 @@ struct PlurifoldApp: App {
 private struct SignedInRoot: View {
     @EnvironmentObject private var session: NativeSession
     @StateObject private var store: LiveLibraryStore
+    @StateObject private var studyScope = MobileStudyScope()
 
     init(session: NativeSession) {
         _store = StateObject(wrappedValue: LiveLibraryStore(session: session))
     }
 
     var body: some View {
-        TabView {
+        TabView(selection: $studyScope.tab) {
             LiveHomeView()
                 .tabItem { Label("Home", systemImage: "house") }
+                .tag(MobileStudyTab.home)
             LiveWordsView()
                 .tabItem { Label("Words", systemImage: "bookmark") }
+                .tag(MobileStudyTab.words)
+            LiveReviewView()
+                .tabItem { Label("Review", systemImage: "rectangle.on.rectangle") }
+                .tag(MobileStudyTab.review)
             account
                 .tabItem { Label("Account", systemImage: "person.crop.circle") }
+                .tag(MobileStudyTab.account)
         }
         .tint(Palette.accent)
         .environmentObject(store)
+        .environmentObject(studyScope)
+        .onChange(of: store.isLoading) { _, loading in
+            // Reconcile the completed catalog + vocabulary snapshot together.
+            if !loading, store.notice == nil {
+                studyScope.reconcile(languages: MobileStudyLanguageList(courses: store.courses, words: store.words).languages)
+            }
+        }
     }
 
     private var account: some View {

@@ -2,11 +2,11 @@
 
 A native SwiftUI app for the same Plurifold account, lessons, and saved vocabulary you use on the website. Requires iOS 17 or later on iPhone or iPad.
 
-The live app has reached an iPhone through TestFlight. This revision adds a language Home screen, quicker phrase selection with word haptics, a one-second playback sentence hold, and website-inspired colors and lesson borders. Course folders, continuous paragraphs, the supplied icon, and the Unicode and text-sizing corrections remain included. Run Codemagic to compile and test this revision before installing it.
+The live app has reached an iPhone through TestFlight. This revision adds language-specific Words and Review, joined phrase highlights with a brief bubble response, a 0.45-second playback sentence hold, and leaner mobile AI explanations. Course folders, continuous paragraphs, the supplied icon, and the Unicode and text-sizing corrections remain included. Run Codemagic to compile and test this revision before installing it.
 
 ## Install this update from Windows
 
-Start with [NEXT-BUILD.md](NEXT-BUILD.md). **Plurifold-iOS-Live-Update.zip contains the full source project**, including its folders. Upload the extracted contents to the existing GitHub repository and run **Plurifold - TestFlight** in Codemagic.
+Start with [NEXT-BUILD.md](NEXT-BUILD.md). Build the latest **main** commit from [lowqueue/plurifold-ios](https://github.com/lowqueue/plurifold-ios) using **Plurifold - TestFlight** in Codemagic. No manual file upload is needed for an update already committed to the repository.
 
 Your existing Apple integration, certificate, provisioning profile, and bundle ID remain in use. There are no new API secrets to enter. [TESTFLIGHT.md](TESTFLIGHT.md) contains the existing signing references and optional setup instructions for a new environment.
 
@@ -16,25 +16,26 @@ Codemagic runs a finite build job on a cloud Mac. It regenerates the Xcode proje
 
 - Email and password sign-in with your existing website account. Session tokens are stored in the device Keychain, refreshed when needed, and validated when restoring a saved login.
 - Live published lessons and the signed-in user's private saved lessons. The prepared course catalog contains four course collections with 75 entries, alongside the shared and account-specific library content available to that user.
-- **Home** shows the available languages with flags. Choose a language to open its **Courses** and **Lessons**; there is no **All languages** option. Each course opens as a folder containing its chapters; independent lessons stay grouped by channel. Search stays within the chosen language. Return to Home to switch languages.
+- **Home** shows the available languages with flags. Choose a language to open its **Courses** and **Lessons**; there is no **All languages** option. Each course opens as a folder containing its chapters; independent lessons stay grouped by channel. Search, Words, and Review stay within the chosen language. Return to Home or use Change in Words/Review to switch languages. No vocabulary is shown until you choose one; signing out resets the choice.
 - The website's **Blue Hour** light and dark colors, green course accents, gold details, and visible lesson borders. The complete transcript sits in one reading panel with continuous paragraph spacing, without passage cards, numbers, or repeated controls.
 - Tap a word to select it. Hold still for about **0.2 seconds**, then drag in any direction to select a phrase. A light haptic marks the start of dragging and each new word under your finger, including when shortening or reversing the selection. Holding still or crossing blank space produces no repeated ticks. Ordinary swipes scroll; there is no Select mode. Tap **Explain** to request a definition. Tapping blank space, the selected word again, or **Clear selection** removes the active selection. Closing a definition also clears it.
-- Pale blue marks show individual words, gold marks show lesson vocabulary and saved terms, and stronger blue marks show the current selection. Clearing the selection preserves vocabulary marks. Text characters and paragraph spacing remain unchanged.
-- The website's existing AI definition and question services supply contextual meaning, grammar, usage, and follow-up answers. The app calls Plurifold's authenticated API; provider secrets stay on the server.
+- Pale blue marks show individual words and gold marks show lesson vocabulary and saved terms. Selected neighbouring words join across spaces into one blue highlight per visual line. The touched word briefly swells and brightens as you drag. Reduce Motion disables the pulse. Clearing restores the separate vocabulary marks without changing text or line wrapping.
+- The authenticated AI services keep definitions and follow-up questions available during free testing. Mobile requests use the server-controlled `mobile-lite` profile: GPT-4.1 nano, shorter instructions and schema, 1,200 UTF-16 units of context, up to two form rows, and the latest two follow-up turns. Definitions have a 650-token output cap and answers 280; the website retains its existing profile and cache. Provider secrets stay on the server. Model quality and latency still need live language testing.
+- **Review** uses saved words and phrases from the selected language. Reveal meaning, then choose Again to requeue a card or Got it to finish it for the current round. This is session practice; it does not yet store mastery ratings or a spaced-repetition schedule.
 - Saved words and phrases, vocabulary status, and reading places share the website's account data. Changes use narrow update operations so they do not replace unrelated study records.
 - The main reader shows **Watch video** or **Listen to recording**. It opens a large panel from the bottom with playback above the transcript. Press the player's Play control to begin. A recording menu appears only when multiple sources exist; YouTube retains its **Open on YouTube** fallback.
 - Playback follows passages with valid source timestamps. Manually scrolling switches following off; **Follow audio** returns to the current passage. Untimed lessons remain manually scrolled, without invented timing.
-- Hold a sentence in the player transcript for **one second** to pause and open **Study sentence**. The target is captured when the hold begins, so playback cannot replace it. Select individual words or phrases, or choose **Explain sentence**. **Back to player** returns to the paused player; resume using its Play control.
+- Hold a sentence in the player transcript for **0.45 seconds** to pause and open **Study sentence**. The target is captured when the hold begins, so playback cannot replace it. Select individual words or phrases, or choose **Explain sentence**. **Back to player** returns to the paused player; resume using its Play control.
 - One reader bar provides device-voice **Listen** and **Reader options** for saving/resuming your place and showing supplied translations. Listen reads the paragraph at the top of the visible text.
 
 ## First device check
 
 1. Install the new TestFlight build and sign in with your Plurifold email and password.
 2. In **Home**, choose a language using its flag tile. Open a course folder and verify its chapters are inside it. Return to **Lessons** and open a video lesson. Check search, including a chapter title, and return Home to switch languages. Only content in the chosen language should appear.
-3. Check word boundaries and the single reading-panel border in both light and dark appearance. Tap a word, then tap blank space or the panel padding to clear it. Select the word twice to clear it again. Hold for about 0.2 seconds and drag over **in questo video**, including forward, backward, and multiline selections. Feel for one light tick on each new word; holding still should be silent. Ordinary swipes should scroll without selecting a phrase.
+3. Check word boundaries and the single reading-panel border in both light and dark appearance. Tap a word, then tap blank space or the panel padding to clear it. Select the word twice to clear it again. Hold for about 0.2 seconds and drag over **in questo video**, including forward, backward, and multiline selections. Watch the selection join across spaces and pulse at the touched word. Feel for one light tick on each new word; holding still should be silent. Enable Reduce Motion and check that selection still works without the pulse. Ordinary swipes should scroll without selecting a phrase.
 4. Select a word or phrase, press **Explain**, ask a follow-up question, and save it. Close the explanation and confirm the active selection is cleared. Check blank-space clearing below a short sentence as well. AI response time still depends on the network and server.
-5. Open **Watch video**, start playback, and verify the transcript follows timed passages. Scroll manually, then use **Follow audio**. Hold a sentence near a passage transition for one second: the correct sentence should open, and the player should pause. Study a phrase and return to the player; its position should remain where it paused.
-6. Save the phrase and find it in **Words** and on the website after refreshing. Scroll into a later paragraph, use **Reader options → Save my place**, leave the lesson, then return and use **Resume reading**.
+5. Open **Watch video**, start playback, and verify the transcript follows timed passages. Scroll manually, then use **Follow audio**. Hold a sentence near a passage transition for about 0.45 seconds: the correct sentence should open, and the player should pause. Study a phrase and return to the player; its position should remain where it paused.
+6. Save the phrase and find it in **Words**, **Review**, and on the website after refreshing. In Review, reveal it, choose Again, then Got it. Switch Home from Italian to Estonian and verify that neither tab shows Italian cards. Scroll into a later paragraph, use **Reader options → Save my place**, leave the lesson, then return and use **Resume reading**.
 7. Check an untimed course recording, multiple-track playback, device-voice Listen, closing the player, and backgrounding the app. Closing the player stops playback; reopening creates a fresh player.
 8. Close and reopen the app to check saved sign-in. In **Account**, sign out and back in. A second account should show its own private lessons and study data.
 
@@ -42,7 +43,7 @@ Use **Account → Refresh library and study data**, or pull to refresh the libra
 
 ## Current scope
 
-The app uses a network connection for sign-in, live lessons, AI, and shared study data. It does not provide downloaded lessons or an offline write queue in this build. Signup and password reset open the existing website flow; return to the app to sign in afterward.
+The app uses a network connection for sign-in, live lessons, AI, and shared study data. It does not provide downloaded lessons or an offline write queue in this build. In-App Purchases and membership entitlements are not implemented yet; AI remains available to signed-in free testers. Signup and password reset open the existing website flow; return to the app to sign in afterward.
 
 Specialized exercises, handwriting, and live voice practice continue through website links. Their web interfaces have not been rebuilt as native screens. Original prototype lessons and tests remain in the source as fixtures, but the signed-in app opens Home. The old prototype's device-local words, quiz scores, and progress are not automatically imported into an account.
 
@@ -56,6 +57,8 @@ Every word can be selected regardless of its vocabulary status. VoiceOver retain
 | `Plurifold/Networking` | Keychain-backed session and authenticated Plurifold requests |
 | `Plurifold/Models/LiveLibrary.swift` | Live content models and serialized study updates |
 | `Plurifold/Models/MobileLanguageCatalog.swift` | Available Home languages, flags, and language-scoped destinations |
+| `Plurifold/Models/MobileStudyScope.swift` | Shared language and tab navigation, reset per signed-in account |
+| `Plurifold/Models/MobileVocabularyReview.swift` | Language-filtered vocabulary and session review queue |
 | `Plurifold/Models/MobileLibraryIndex.swift` | Course folders, lesson groups, and search classification |
 | `Plurifold/Models/ReadingDocument.swift` | Continuous text and original paragraph offsets for reading places |
 | `Plurifold/Models/LessonTranscriptTimeline.swift` | Source-timestamp matching, gaps, and backward seeking |

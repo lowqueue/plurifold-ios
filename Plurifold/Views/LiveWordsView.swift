@@ -2,101 +2,101 @@ import SwiftUI
 
 struct LiveWordsView: View {
     @EnvironmentObject private var store: LiveLibraryStore
+    @EnvironmentObject private var studyScope: MobileStudyScope
     @State private var search = ""
     @State private var selectedWord: MobileSavedWord?
 
+    private var languageWords: [MobileSavedWord] {
+        MobileVocabularyIndex(words: store.words, languageCode: studyScope.language?.code).words
+    }
+
     private var filteredWords: [MobileSavedWord] {
-        let query = search.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !query.isEmpty else { return store.words }
-        return store.words.filter { word in
-            [word.term, word.meaning, word.note, word.languageName, word.sourceLessonTitle ?? ""]
-                .contains { $0.localizedStandardContains(query) }
-        }
+        MobileVocabularyIndex(words: store.words, languageCode: studyScope.language?.code, search: search).words
     }
 
     var body: some View {
         NavigationStack {
             List {
-                if let notice = store.notice {
+                if let language = studyScope.language {
                     Section {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Label(notice, systemImage: "exclamationmark.circle")
-                                .font(.subheadline)
-                                .foregroundStyle(Palette.secondary)
-                            Button("Refresh") { Task { await store.refresh() } }
-                                .disabled(store.isLoading)
+                        StudyLanguageHeader(language: language)
+                            .listRowBackground(Palette.surface)
+                    }
+                    if let notice = store.notice {
+                        Section {
+                            LibraryNoticeRow(notice: notice)
+                                .listRowBackground(Palette.surface)
                         }
-                        .listRowBackground(Palette.surface)
                     }
-                }
-
-                if store.isLoading && store.words.isEmpty {
-                    Section {
-                        HStack {
-                            Spacer()
-                            ProgressView("Loading saved words…").padding(.vertical, 36)
-                            Spacer()
+                    if store.isLoading && languageWords.isEmpty {
+                        Section {
+                            HStack {
+                                Spacer()
+                                ProgressView("Loading saved words…").padding(.vertical, 36)
+                                Spacer()
+                            }
+                            .listRowBackground(Color.clear)
                         }
-                        .listRowBackground(Color.clear)
-                    }
-                } else if store.words.isEmpty {
-                    Section {
-                        ContentUnavailableView("Your saved words", systemImage: "bookmark",
-                                               description: Text("Save a word or phrase while reading a lesson. Your saved vocabulary is shared with your Plurifold account."))
-                            .listRowBackground(Color.clear)
-                    }
-                } else if filteredWords.isEmpty {
-                    Section {
-                        ContentUnavailableView.search(text: search)
-                            .listRowBackground(Color.clear)
+                    } else if languageWords.isEmpty {
+                        Section {
+                            ContentUnavailableView("Your \(language.name) words", systemImage: "bookmark",
+                                                   description: Text("Save a word or phrase while reading in \(language.name). It will appear here and in Review."))
+                                .listRowBackground(Color.clear)
+                        }
+                    } else if filteredWords.isEmpty {
+                        Section {
+                            ContentUnavailableView.search(text: search)
+                                .listRowBackground(Color.clear)
+                        }
+                    } else {
+                        Section {
+                            ForEach(filteredWords) { word in
+                                Button { selectedWord = word } label: {
+                                    VStack(alignment: .leading, spacing: 6) {
+                                        Text(word.term).font(.headline).foregroundStyle(Palette.ink)
+                                        Text(word.meaning)
+                                            .font(.subheadline)
+                                            .foregroundStyle(Palette.secondary)
+                                            .lineLimit(3)
+                                        if let title = word.sourceLessonTitle, !title.isEmpty {
+                                            Text(title).font(.caption).foregroundStyle(Palette.secondary).lineLimit(1)
+                                        }
+                                    }
+                                    .padding(.vertical, 6)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .contentShape(Rectangle())
+                                }
+                                .buttonStyle(.plain)
+                                .listRowBackground(Palette.surface)
+                                .swipeActions {
+                                    Button(role: .destructive) {
+                                        Task { await store.removeWord(word.id) }
+                                    } label: {
+                                        Label("Remove", systemImage: "trash")
+                                    }
+                                    .disabled(store.isSaving)
+                                }
+                            }
+                        } header: {
+                            Text("\(filteredWords.count) saved \(filteredWords.count == 1 ? "item" : "items")")
+                                .textCase(nil)
+                        } footer: {
+                            Text("Swipe left to remove a saved word from your account.")
+                        }
                     }
                 } else {
                     Section {
-                        ForEach(filteredWords) { word in
-                            Button { selectedWord = word } label: {
-                                VStack(alignment: .leading, spacing: 6) {
-                                    HStack(alignment: .firstTextBaseline) {
-                                        Text(word.term).font(.headline).foregroundStyle(Palette.ink)
-                                        Spacer(minLength: 12)
-                                        Text(word.languageName).font(.caption).foregroundStyle(Palette.secondary)
-                                    }
-                                    Text(word.meaning)
-                                        .font(.subheadline)
-                                        .foregroundStyle(Palette.secondary)
-                                        .lineLimit(3)
-                                    if let title = word.sourceLessonTitle, !title.isEmpty {
-                                        Text(title).font(.caption).foregroundStyle(Palette.secondary).lineLimit(1)
-                                    }
-                                }
-                                .padding(.vertical, 6)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
-                            .listRowBackground(Palette.surface)
-                            .swipeActions {
-                                Button(role: .destructive) {
-                                    Task { await store.removeWord(word.id) }
-                                } label: {
-                                    Label("Remove", systemImage: "trash")
-                                }
-                                .disabled(store.isSaving)
-                            }
-                        }
-                    } header: {
-                        Text("\(filteredWords.count) saved \(filteredWords.count == 1 ? "item" : "items")")
-                            .textCase(nil)
-                    } footer: {
-                        Text("Swipe left to remove a saved word from your account.")
+                        ChooseStudyLanguageView()
+                            .listRowBackground(Color.clear)
                     }
                 }
             }
             .listStyle(.insetGrouped)
             .scrollContentBackground(.hidden)
             .studyBackground()
-            .tint(Palette.ink)
+            .tint(Palette.accent)
             .navigationTitle("Words")
-            .searchable(text: $search, prompt: "Words, meanings, languages")
+            .searchable(text: $search, prompt: "Words and meanings in this language")
             .refreshable { await store.refresh() }
             .task { if !store.hasLoaded { await store.refresh() } }
             .toolbar {
@@ -109,6 +109,50 @@ struct LiveWordsView: View {
             .sheet(item: $selectedWord) { word in
                 LiveSavedWordDetail(word: word)
             }
+            .onChange(of: studyScope.language?.code) { _, _ in
+                search = ""
+                selectedWord = nil
+            }
+            .onChange(of: languageWords) { _, words in
+                if let selectedWord {
+                    // Refresh an open detail too, or dismiss it if the word was removed.
+                    self.selectedWord = words.first { $0.id == selectedWord.id }
+                }
+            }
+        }
+    }
+}
+
+struct StudyLanguageHeader: View {
+    @EnvironmentObject private var studyScope: MobileStudyScope
+    let language: MobileLanguageOption
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Text(language.flag).font(.title2).accessibilityHidden(true)
+            Text(language.name).font(.headline).fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 8)
+            Button("Change") { studyScope.showLanguagePicker() }
+                .font(.subheadline)
+                .accessibilityLabel("Change study language")
+        }
+        .foregroundStyle(Palette.ink)
+        .tint(Palette.accent)
+    }
+}
+
+struct ChooseStudyLanguageView: View {
+    @EnvironmentObject private var studyScope: MobileStudyScope
+
+    var body: some View {
+        ContentUnavailableView {
+            Label("Choose your language", systemImage: "globe")
+        } description: {
+            Text("Choose a language on Home to see its saved words and review them.")
+        } actions: {
+            Button("Choose a language") { studyScope.showLanguagePicker() }
+                .buttonStyle(.borderedProminent)
+                .tint(Palette.accent)
         }
     }
 }

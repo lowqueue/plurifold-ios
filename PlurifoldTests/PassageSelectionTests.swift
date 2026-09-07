@@ -205,6 +205,82 @@ final class PassageSelectionTests: XCTestCase {
                        [NSRange(location: 3, length: 4), NSRange(location: 13, length: 4)])
     }
 
+    func testSelectedNeighboursJoinSpacesButKeepLineAndPassageBreaks() {
+        let hits = [
+            PassageWordHit(range: NSRange(location: 0, length: 4), rect: CGRect(x: 10, y: 0, width: 30, height: 24)),
+            PassageWordHit(range: NSRange(location: 5, length: 4), rect: CGRect(x: 46, y: 0, width: 32, height: 24)),
+            PassageWordHit(range: NSRange(location: 10, length: 4), rect: CGRect(x: 0, y: 30, width: 36, height: 24)),
+            PassageWordHit(range: NSRange(location: 16, length: 4), rect: CGRect(x: 0, y: 82, width: 38, height: 24))
+        ]
+        let geometry = PassageWordGeometryIndex(hits: hits)
+        XCTAssertEqual(geometry.selectionFragments(for: NSRange(location: 0, length: 9)),
+                       [CGRect(x: 10, y: 0, width: 68, height: 24)])
+        XCTAssertEqual(geometry.selectionFragments(for: NSRange(location: 0, length: 20)), [
+            CGRect(x: 10, y: 0, width: 68, height: 24), hits[2].rect, hits[3].rect
+        ])
+        // A partial redraw still paints the joined fragment to its original
+        // first word, avoiding a seam at the former selection edge.
+        XCTAssertEqual(geometry.selectionFragments(for: NSRange(location: 0, length: 20),
+                                                   displaying: hits[1].range),
+                       [CGRect(x: 10, y: 0, width: 68, height: 24)])
+        XCTAssertEqual(geometry.selectionFragments(for: NSRange(location: 0, length: 0)), [])
+    }
+
+    func testJoinedSelectionDoesNotBridgeAnUnselectedVisualWordInBidiText() {
+        let first = PassageWordHit(range: NSRange(location: 0, length: 4),
+                                   rect: CGRect(x: 0, y: 0, width: 28, height: 24))
+        let intervening = PassageWordHit(range: NSRange(location: 10, length: 4),
+                                         rect: CGRect(x: 35, y: 0, width: 26, height: 24))
+        let second = PassageWordHit(range: NSRange(location: 5, length: 4),
+                                    rect: CGRect(x: 68, y: 0, width: 28, height: 24))
+        let geometry = PassageWordGeometryIndex(hits: [second, first, intervening])
+        XCTAssertEqual(geometry.selectionFragments(for: NSRange(location: 0, length: 9)),
+                       [first.rect, second.rect])
+        XCTAssertEqual(geometry.selectionFragments(for: NSRange(location: 0, length: 14)),
+                       [CGRect(x: 0, y: 0, width: 96, height: 24)])
+    }
+
+    func testShrinkingAndReversingJoinedSelectionRestoresOnlyCurrentWordShapes() {
+        let hits = (0..<3).map { index in
+            PassageWordHit(range: NSRange(location: index * 5, length: 4),
+                           rect: CGRect(x: CGFloat(index * 36), y: 0, width: 30, height: 24))
+        }
+        let geometry = PassageWordGeometryIndex(hits: hits)
+        let anchor = hits[1].range
+        let extended = PassageTextSelection.phraseRange(anchor: anchor, endpoint: hits[2].range)
+        let reversed = PassageTextSelection.phraseRange(anchor: anchor, endpoint: hits[0].range)
+        XCTAssertEqual(geometry.selectionFragments(for: extended), [CGRect(x: 36, y: 0, width: 66, height: 24)])
+        XCTAssertEqual(geometry.selectionFragments(for: anchor), [hits[1].rect])
+        XCTAssertEqual(geometry.selectionFragments(for: reversed), [CGRect(x: 0, y: 0, width: 66, height: 24)])
+        let redraw = PassageTextSelection.highlightDisplayRanges(previous: extended, current: reversed,
+                                                                 words: hits.map(\.range))
+        for hit in hits { XCTAssertTrue(redraw.contains(hit.range)) }
+        XCTAssertTrue(PassageTextSelection.highlightDisplayRanges(previous: reversed, current: nil,
+                                                                 words: hits.map(\.range)).contains(reversed))
+        XCTAssertEqual(PassageTextSelection.highlightDisplayRanges(previous: anchor, current: anchor,
+                                                                  words: hits.map(\.range)), [])
+    }
+
+    func testWordReactionSettlesAndClearCannotLeaveAStalePulse() {
+        let first = NSRange(location: 0, length: 4)
+        let second = NSRange(location: 5, length: 4)
+        var reaction = PassageSelectionReactionState()
+        reaction.begin(at: first, timestamp: 10)
+        XCTAssertEqual(reaction.range, first)
+        XCTAssertGreaterThan(reaction.lift(at: 10.06), 0)
+        reaction.begin(at: second, timestamp: 10.08)
+        XCTAssertEqual(reaction.range, second)
+        reaction.begin(at: first, timestamp: 10.10) // Reverse onto the first word.
+        XCTAssertEqual(reaction.range, first)
+        XCTAssertLessThan(reaction.lift(at: 10.20), 2)
+        XCTAssertFalse(reaction.isActive(at: 11))
+        XCTAssertEqual(reaction.lift(at: 11), 0)
+        reaction.clear()
+        XCTAssertNil(reaction.range)
+        XCTAssertFalse(reaction.isActive(at: 10.15))
+        XCTAssertEqual(reaction.lift(at: 10.15), 0)
+    }
+
     func testTokenizerUsesLanguageInsteadOfSpeechLocale() {
         XCTAssertEqual(PassageTextSelection.tokenizerLanguageCode("it-IT"), "it")
         XCTAssertEqual(PassageTextSelection.tokenizerLanguageCode("ka_GE"), "ka")

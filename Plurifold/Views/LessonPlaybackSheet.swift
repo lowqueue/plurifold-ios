@@ -47,7 +47,7 @@ struct LessonPlaybackSheet: View {
                     }
                 }
                 .padding(.horizontal, 24)
-                Text("Hold a sentence for one second to study its words.")
+                Text("Hold a sentence briefly to study its words.")
                     .font(.footnote).foregroundStyle(Palette.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 24).padding(.bottom, 12)
@@ -148,7 +148,7 @@ struct LessonPlaybackSheet: View {
                 }
             }
             .contentShape(Rectangle())
-            .onLongPressGesture(minimumDuration: 1, maximumDistance: 16, pressing: { pressing in
+            .onLongPressGesture(minimumDuration: 0.45, maximumDistance: 16, pressing: { pressing in
                 if pressing {
                     // Snapshot on touch-down, before a timing event can advance the transcript.
                     heldSentence = sentence

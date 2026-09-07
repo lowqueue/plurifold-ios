@@ -41,7 +41,7 @@ struct SelectionInsightSheet: View {
         return words > 1 ? "phrase" : "word"
     }
 
-    private var requestContext: String { InsightText.context(around: selection, utf16Limit: 2_400) }
+    private var requestContext: String { InsightText.context(around: selection, utf16Limit: 1_200) }
     private var validSelection: Bool {
         !selection.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && selection.text.utf16.count <= 800
     }
@@ -326,9 +326,9 @@ struct SelectionInsightSheet: View {
         var request = InsightAskRequest(selection: selection.text, context: requestContext,
                                         language: lesson.languageName, dialect: lesson.dialect, scope: scope,
                                         entry: insight, question: submittedQuestion,
-                                        history: conversation.suffix(4).map {
+                                        history: conversation.suffix(2).map {
             InsightExchange(question: InsightText.prefix($0.question, utf16Limit: 600),
-                            answer: InsightText.prefix($0.answer, utf16Limit: 2_000))
+                            answer: InsightText.prefix($0.answer, utf16Limit: 900))
         })
         askTask = Task {
             defer {
@@ -366,6 +366,7 @@ struct SelectionInsightSheet: View {
 }
 
 private struct InsightDefineRequest: Encodable {
+    let profile = "mobile-lite"
     let selection: String
     let context: String
     let language: String
@@ -377,6 +378,7 @@ private struct InsightDefineResponse: Decodable { let insight: SelectionInsight 
 private struct InsightAskResponse: Decodable { let answer: String }
 
 private struct InsightAskRequest: Encodable {
+    let profile = "mobile-lite"
     let selection: String
     let context: String
     let language: String

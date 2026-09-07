@@ -2,19 +2,39 @@ import SwiftUI
 
 struct LiveLibraryView: View {
     @EnvironmentObject private var store: LiveLibraryStore
+    @EnvironmentObject private var studyScope: MobileStudyScope
     @State private var search = ""
     let languageCode: String
     let languageName: String
 
     private var catalog: MobileLanguageCatalog { MobileLanguageCatalog(courses: store.courses) }
-    private var language: MobileLanguageOption? { catalog.language(for: languageCode) }
+    private var language: MobileLanguageOption? {
+        guard let key = MobileLanguageKey.normalized(languageCode) else { return nil }
+        return catalog.languages.first { MobileLanguageKey.normalized($0.code) == key }
+    }
 
     private var index: MobileLibraryIndex {
-        MobileLibraryIndex(courses: catalog.courses(for: languageCode), search: search)
+        MobileLibraryIndex(courses: catalog.courses(for: language?.code ?? languageCode), search: search)
     }
 
     var body: some View {
         List {
+            Section {
+                HStack(spacing: 12) {
+                    Button { studyScope.tab = .words } label: {
+                        Label("Words", systemImage: "bookmark")
+                            .frame(maxWidth: .infinity, minHeight: 36)
+                    }
+                    Button { studyScope.tab = .review } label: {
+                        Label("Review", systemImage: "rectangle.on.rectangle")
+                            .frame(maxWidth: .infinity, minHeight: 36)
+                    }
+                }
+                .buttonStyle(.bordered)
+                .listRowBackground(Color.clear)
+                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+            }
+
             if let notice = store.notice {
                 Section {
                     LibraryNoticeRow(notice: notice)
@@ -44,8 +64,8 @@ struct LiveLibraryView: View {
                 }
             } else if language == nil {
                 Section {
-                    ContentUnavailableView("Language unavailable", systemImage: "globe",
-                                           description: Text("Return to Home to choose an available language, or pull down to refresh."))
+                    ContentUnavailableView("No lessons available", systemImage: "books.vertical",
+                                           description: Text("There are no available lessons here. Your saved words remain accessible in Words and Review. Return to Home to choose another language, or pull down to refresh."))
                         .listRowBackground(Color.clear)
                 }
             } else if index.isEmpty {

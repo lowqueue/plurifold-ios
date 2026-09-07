@@ -2,7 +2,24 @@
 
 Updated on 2026-09-07. The development workspace runs Linux and has no Xcode or native iOS simulator. Historical build results and current source checks are separated below.
 
-## Current Home, selection, and color update
+## Current review, reactive selection, and mobile AI update
+
+- Playback sentence hold is 0.45 seconds. Its frozen sentence target and pause behavior remain.
+- Selected words join across spaces into a rounded fill per visual line. A 0.26-second local bubble pulse responds to touched words without modifying text or line wrapping. Reduce Motion and VoiceOver suppress the pulse. Clear, cancellation, text replacement, and view removal cancel it.
+- Home supplies one language to both Words and Review. Choice resets per account. Saved-only languages remain reachable after their lessons disappear. Review is an in-memory round with Reveal / Again / Got it; it does not write mastery or SRS changes.
+- Native AI requests carry `profile: mobile-lite`, send up to 1,200 UTF-16 units of context and two recent follow-up turns. The server uses GPT-4.1 nano with compact prompts, 650/280-token definition/answer budgets and a separate mobile cache. AI remains available during free testing; payments are not part of this revision.
+
+Completed checks:
+
+- All 42 Swift files parsed without grammar errors: 33 app sources and nine test files. This is not Swift typechecking or native compilation.
+- The regenerated Xcode project validates 116 object references and includes all new source/test files.
+- There are 68 XCTest methods. Twenty added cases cover language scope/navigation/account reset, review filtering/requeue/refresh/removal, joined highlight geometry, endpoint repainting, and reaction cancellation. These await Codemagic execution.
+- Eleven focused server tests pass: five mobile AI route/profile checks and six existing mobile content/study integration checks. Tests mock the provider and verify authentication, fixed model selection, compact request budgets, cache isolation, website profile preservation, and rejection of incomplete output. They do not measure live model quality or latency.
+- The website production build passes with the mobile server profile. A separate full-repository TypeScript check reports existing Cloudflare runtime-type and unrelated reader/worker errors; it reports no diagnostics in the changed AI files. Native code keeps all API credentials on the server. The supplied icon, signing configuration, and explicit CGFloat sizing correction remain intact.
+
+Use Codemagic for compilation and XCTest, then check the 0.45-second hold, bubble appearance, joined multiline selections, haptics, Reduce Motion, language switching, review flow, and actual AI answers on the iPhone. Review progress lasts for the current view session, not across launches.
+
+## Previous Home, selection, and color update
 
 - The phrase hold is now 0.20 seconds. A reused, prewarmed selection feedback generator ticks when dragging begins and when the endpoint enters a different word, including shortening and reversing. Repeated samples on one word, blank space, and cancelled gestures do not emit ticks. Selection changes still do not request AI responses.
 - Playback sentence study opens after a one-second hold. The sentence is captured on touch-down and following stays frozen while holding/studying it; the existing pause and return behavior remains.
@@ -139,4 +156,4 @@ That installation establishes the earlier signing and distribution path. It does
 
 ## Next verification
 
-Follow [NEXT-BUILD.md](NEXT-BUILD.md) to commit the full source package and start a new **Plurifold - TestFlight** build. Keep the new build's commit, test results, publishing result, and device observations with this record when they become available.
+Follow [NEXT-BUILD.md](NEXT-BUILD.md) to build the latest repository commit using a new **Plurifold - TestFlight** build. Keep the new build's commit, test results, publishing result, and device observations with this record when they become available.
