@@ -1,9 +1,19 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
-  <title>Plurifold app icon</title>
-  <desc>A dark green lowercase p and terminal cursor on a light green background.</desc>
-  <rect width="1024" height="1024" fill="#D5E2CA"/>
-  <g fill="#294435">
-    <path fill-rule="evenodd" d="M240 300H425C553 300 618 365 618 470C618 576 553 640 425 640H334V756H240ZM334 390V550H421C488 550 524 524 524 470C524 416 488 390 421 390Z"/>
-    <path d="M672 552H808V640H672Z"/>
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 512 512" role="img" aria-labelledby="title desc" style="color: #111111">
+  <title id="title">Plurifold</title>
+  <desc id="desc">A geometric lowercase p followed closely by a blinking block cursor. The letter stays still.</desc>
+  <style>
+    .cursor { animation: plurifold-blink 1.2s step-end infinite; }
+    @keyframes plurifold-blink {
+      0%, 64.99% { opacity: 1; }
+      65%, 100% { opacity: 0; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .cursor { animation: none; opacity: 1; }
+    }
+  </style>
+  <g fill="currentColor" transform="translate(-13 -2)">
+    <path fill-rule="evenodd" d="M104 146H148V162C163 149 182 142 204 142C254 142 290 178 290 228C290 278 254 314 204 314C182 314 164 308 148 295V374H104Z M148 228C148 256 168 274 197 274C225 274 246 255 246 228C246 201 225 182 197 182C168 182 148 200 148 228Z"/>
+    <rect class="cursor" x="312" y="140" width="122" height="234"/>
   </g>
 </svg>
