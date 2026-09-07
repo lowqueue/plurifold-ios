@@ -104,14 +104,72 @@ final class PassageSelectionTests: XCTestCase {
         XCTAssertNil(PassageTextSelection.wordRange(in: [], utf16Offset: 0, nearest: true))
     }
 
-    func testDragDirectionKeepsVerticalReadingScrollAndImmediateSelectMode() {
-        XCTAssertEqual(PassageDragDecision.decide(dx: 2, dy: 5, selectionMode: false), .pending)
-        XCTAssertEqual(PassageDragDecision.decide(dx: 2, dy: 5, selectionMode: true), .pending)
-        XCTAssertEqual(PassageDragDecision.decide(dx: 2, dy: 6, selectionMode: false), .scroll)
-        XCTAssertEqual(PassageDragDecision.decide(dx: 6, dy: 2, selectionMode: false), .select)
-        XCTAssertEqual(PassageDragDecision.decide(dx: -6, dy: -2, selectionMode: false), .select)
-        XCTAssertEqual(PassageDragDecision.decide(dx: 6, dy: 6, selectionMode: false), .scroll)
-        XCTAssertEqual(PassageDragDecision.decide(dx: 0, dy: -6, selectionMode: true), .select)
+    func testMovementBeforeHoldScrollsAndCompletedHoldSelectsInEveryDirection() {
+        XCTAssertEqual(PassageDragDecision.holdDuration, 0.35, accuracy: 0.001)
+        XCTAssertEqual(PassageDragDecision.decide(dx: 2, dy: 5, holdReady: false), .pending)
+        XCTAssertEqual(PassageDragDecision.decide(dx: 2, dy: 8, holdReady: false), .scroll)
+        XCTAssertEqual(PassageDragDecision.decide(dx: 8, dy: 2, holdReady: false), .scroll)
+        XCTAssertEqual(PassageDragDecision.decide(dx: -8, dy: -2, holdReady: false), .scroll)
+        XCTAssertEqual(PassageDragDecision.decide(dx: 0, dy: 0, holdReady: true), .select)
+        XCTAssertEqual(PassageDragDecision.decide(dx: 0, dy: -20, holdReady: true), .select)
+        XCTAssertEqual(PassageDragDecision.decide(dx: -20, dy: 10, holdReady: true), .select)
+    }
+
+    func testRepeatedWordTapClearsButHoldAndNewSelectionsRemain() {
+        let first = NSRange(location: 3, length: 5)
+        let second = NSRange(location: 10, length: 4)
+        XCTAssertTrue(PassageTapDecision.shouldClear(previous: first, completed: first, afterHold: false))
+        XCTAssertFalse(PassageTapDecision.shouldClear(previous: first, completed: first, afterHold: true))
+        XCTAssertFalse(PassageTapDecision.shouldClear(previous: nil, completed: first, afterHold: false))
+        XCTAssertFalse(PassageTapDecision.shouldClear(previous: first, completed: second, afterHold: false))
+    }
+
+    func testCachedGeometryDistinguishesWordsFromSpacesAndSnapsDragging() {
+        let first = NSRange(location: 0, length: 2)
+        let second = NSRange(location: 3, length: 6)
+        let third = NSRange(location: 11, length: 5)
+        let geometry = PassageWordGeometryIndex(hits: [
+            PassageWordHit(range: first, rect: CGRect(x: 0, y: 0, width: 15, height: 24)),
+            PassageWordHit(range: second, rect: CGRect(x: 22, y: 0, width: 50, height: 24)),
+            PassageWordHit(range: third, rect: CGRect(x: 0, y: 40, width: 45, height: 24))
+        ])
+        XCTAssertEqual(geometry.word(at: CGPoint(x: 30, y: 12), nearest: false), second)
+        XCTAssertEqual(geometry.word(at: CGPoint(x: 16, y: 12), nearest: false), first)
+        XCTAssertNil(geometry.word(at: CGPoint(x: 18, y: 12), nearest: false))
+        XCTAssertNil(geometry.word(at: CGPoint(x: 100, y: 12), nearest: false))
+        XCTAssertNil(geometry.word(at: CGPoint(x: 10, y: 32), nearest: false))
+        XCTAssertEqual(geometry.word(at: CGPoint(x: 100, y: 12), nearest: true), second)
+        XCTAssertEqual(geometry.word(at: CGPoint(x: -10, y: 50), nearest: true), third)
+        XCTAssertEqual(geometry.word(at: CGPoint(x: 20, y: 1000), nearest: true), third)
+        XCTAssertNil(PassageWordGeometryIndex(hits: []).word(at: .zero, nearest: true))
+    }
+
+    func testGeometryPreservesLogicalRangesWhenVisualWordOrderIsReversed() {
+        let first = NSRange(location: 0, length: 4)
+        let second = NSRange(location: 5, length: 3)
+        let geometry = PassageWordGeometryIndex(hits: [
+            PassageWordHit(range: first, rect: CGRect(x: 70, y: 0, width: 35, height: 24)),
+            PassageWordHit(range: second, rect: CGRect(x: 30, y: 0, width: 30, height: 24))
+        ])
+        XCTAssertEqual(geometry.word(at: CGPoint(x: 80, y: 12), nearest: false), first)
+        XCTAssertEqual(geometry.word(at: CGPoint(x: 40, y: 12), nearest: false), second)
+        XCTAssertEqual(PassageTextSelection.phraseRange(anchor: first, endpoint: second),
+                       NSRange(location: 0, length: 8))
+    }
+
+    func testSelectionRepaintsOnlyChangedEdgesAndClearsTheOldRange() {
+        let first = NSRange(location: 3, length: 10)
+        let extended = NSRange(location: 3, length: 20)
+        XCTAssertEqual(PassageTextSelection.changedDisplayRanges(previous: first, current: extended),
+                       [NSRange(location: 13, length: 10)])
+        XCTAssertEqual(PassageTextSelection.changedDisplayRanges(previous: extended, current: first),
+                       [NSRange(location: 13, length: 10)])
+        XCTAssertEqual(PassageTextSelection.changedDisplayRanges(previous: extended, current: nil), [extended])
+        XCTAssertEqual(PassageTextSelection.changedDisplayRanges(previous: nil, current: first), [first])
+        XCTAssertEqual(PassageTextSelection.changedDisplayRanges(previous: first, current: first), [])
+        XCTAssertEqual(PassageTextSelection.changedDisplayRanges(previous: first,
+                       current: NSRange(location: 7, length: 10)),
+                       [NSRange(location: 3, length: 4), NSRange(location: 13, length: 4)])
     }
 
     func testTokenizerUsesLanguageInsteadOfSpeechLocale() {

@@ -2,7 +2,32 @@
 
 Updated on 2026-09-07. The development workspace runs Linux and has no Xcode or native iOS simulator. Historical build results and current source checks are separated below.
 
-## Reader and course organization update
+## Current player and selection revision
+
+The supplied LingQ recording shows a transcript-first reader, a player panel sliding up from the bottom, following text, and a separate sentence study view. The supplied Plurifold recording shows a persistent selection after dismissing its explanation and little visual distinction between active and vocabulary highlights. There are no touch indicators, so exact input latency or hold duration cannot be measured from these recordings.
+
+This revision:
+
+- Moves media into a large playback sheet opened by Watch video or Listen to recording. Nothing plays automatically when opening a lesson.
+- Reports absolute native/YouTube playback time to a cached passage timeline. Only passage transitions update transcript state. Explicit gaps remain gaps; missing final end times do not produce endless following. Untimed text receives no fabricated timing.
+- Freezes a sentence value on touch-down, suspends transcript following while it is held, and pauses playback before opening the sentence study sheet after a two-second hold. Selections map back to the original document's UTF-16 offsets. Returning to the player keeps it paused.
+- Removes the Select toggle. Quick taps select words; a stationary 0.35-second hold arms any-direction phrase dragging. Early swipes release scrolling. Explain is a separate action, so gesture updates never trigger AI requests.
+- Draws blue word marks, gold vocabulary marks, and stronger active marks with cached TextKit geometry. Dragging changes display regions only, without editing attributed text or rebuilding token ranges. This removes an identified source of rendering work, but is not a measured device-speed improvement.
+- Clears active selection on empty-space taps, repeated word taps, Clear, and explanation dismissal. Blank-space targets fill short reader/study viewports. Vocabulary marks persist separately.
+
+Completed checks:
+
+- All 34 Swift files parsed without grammar errors: 28 app sources and six test files. No native typechecking, simulator rendering, or device benchmark was possible locally.
+- The regenerated Xcode project validated 100 object references, file paths, and source/resource membership. All new models, views, and tests are included.
+- Embedded YouTube JavaScript passed a local lifecycle check for one clock timer, paused seeks, unchanged timestamps, invalid values, suspend/resume, and disposal. Existing URL/origin validation, no-autoplay behavior, and bridge cleanup remain.
+- Source review checked memberwise argument order, nested sheet lifecycle, immutable sentence targets, scrolling/following, source-range bounds, and full-viewport clearing. The negative-range and short-sheet clearing issues found during review were corrected.
+- The existing Codemagic workflow remains the required native test gate before signing/uploading. `git diff --check` passed.
+
+There are **43 XCTest methods**: seven session, fifteen selection/geometry, six timing, two sentence-mapping, four course-organization, and nine study-store tests. New coverage exercises hold-versus-scroll decisions, tap-to-clear, incremental display ranges, geometry hit testing, timing gaps/duplicates/backward seeking, and sentence source mapping. These tests have been added but have not been executed in this Linux workspace.
+
+The next Codemagic run must establish native compilation and XCTest results. On iPhone, verify the 0.35-second hold gesture, tap-away clearing, long-document scrolling, source-timestamp following, two-second sentence hold across a cue transition, paused player position after study, and VoiceOver/Dynamic Type. The YouTube API must load for clock callbacks; following is limited to the timing granularity supplied by each lesson. The desktop/mobile website is unchanged.
+
+## Earlier reader and course organization update
 
 The user's iPhone screenshots and recording show the live library and working embedded playback. This revision changes that source without changing the website or signing setup:
 
@@ -53,7 +78,7 @@ The prepared course catalog contained four course collections with 75 entries. T
 
 ## Native test gate still to run
 
-The **Plurifold - TestFlight** workflow runs all 31 current tests before signing and uploading the IPA.
+The **Plurifold - TestFlight** workflow runs all 43 current tests before signing and uploading the IPA.
 
 The supplied Codemagic log establishes native compilation and simulator test execution for its own source revision. This Linux workspace can validate Swift grammar but cannot run Xcode or the new regression tests. The reader/course update still requires Codemagic verification and a device check.
 

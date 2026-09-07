@@ -2,6 +2,7 @@ import SwiftUI
 import AVKit
 import Combine
 import WebKit
+import CoreFoundation
 
 /// Plays only the public HTTPS media URL supplied by the lesson API.
 /// Authentication credentials are never attached to media or YouTube requests.
@@ -10,17 +11,21 @@ struct LessonMediaPlayer: View {
     var showsTitle = true
     var pauseRequest: UUID? = nil
     var onPlaybackStarted: @MainActor () -> Void = {}
+    var onPlaybackTimeChanged: @MainActor (Double) -> Void = { _ in }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             if showsTitle { Text(media.title).font(.headline) }
             if media.kind == "youtube", let videoID = LessonMediaURL.youtubeID(media.url) {
                 YouTubeLessonPlayer(videoID: videoID, start: media.start, end: media.end,
-                                    pauseRequest: pauseRequest, onPlaybackStarted: onPlaybackStarted)
+                                    pauseRequest: pauseRequest, onPlaybackStarted: onPlaybackStarted,
+                                    onPlaybackTimeChanged: onPlaybackTimeChanged)
             } else if ["audio", "video"].contains(media.kind),
                       let url = LessonMediaURL.https(media.url) {
                 NativeLessonPlayer(url: url, isVideo: media.kind == "video",
-                                   start: media.start, end: media.end, pauseRequest: pauseRequest)
+                                   start: media.start, end: media.end, pauseRequest: pauseRequest,
+                                   onPlaybackStarted: onPlaybackStarted,
+                                   onPlaybackTimeChanged: onPlaybackTimeChanged)
                     .id("\(media.id)|\(media.url)|\(media.start ?? -1)|\(media.end ?? -1)")
             } else {
                 Label("This lesson's media link is unavailable.", systemImage: "exclamationmark.circle")
@@ -114,6 +119,8 @@ private final class LessonPlayback: ObservableObject {
                                      toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] _ in
                         Task { @MainActor [weak self] in
                             guard let self, self.generation == loadID else { return }
+                            let seconds = self.player.currentTime().seconds
+                            if seconds.isFinite, seconds >= 0 { self.position = seconds }
                             self.isLoading = false
                         }
                     }
@@ -139,7 +146,9 @@ private final class LessonPlayback: ObservableObject {
         timeObserver = player.addPeriodicTimeObserver(forInterval: CMTime(seconds: 0.5, preferredTimescale: 600), queue: .main) { [weak self] time in
             Task { @MainActor [weak self] in
                 guard let self, self.generation == loadID else { return }
-                if time.seconds.isFinite { self.position = max(self.lowerBound, time.seconds) }
+                if time.seconds.isFinite, time.seconds >= 0, abs(self.position - time.seconds) >= 0.04 {
+                    self.position = time.seconds
+                }
                 if let current = self.player.currentItem { self.updateBounds(current) }
             }
         }
@@ -165,9 +174,11 @@ private final class LessonPlayback: ObservableObject {
     private func updateBounds(_ item: AVPlayerItem) {
         let duration = item.duration.seconds
         guard duration.isFinite, duration > 0 else { return }
-        lowerBound = requestedStart < duration ? requestedStart : 0
-        upperBound = min(requestedEnd ?? duration, duration)
-        if upperBound <= lowerBound { upperBound = duration }
+        let beginning = requestedStart < duration ? requestedStart : 0
+        let ending = min(requestedEnd ?? duration, duration)
+        if lowerBound != beginning { lowerBound = beginning }
+        let boundedEnd = ending > beginning ? ending : duration
+        if upperBound != boundedEnd { upperBound = boundedEnd }
         // Some lessons reference a complete resource track without clip bounds.
         // An absent end time must preserve the full recording.
     }
@@ -246,6 +257,8 @@ private struct NativeLessonPlayer: View {
     let start: Double?
     let end: Double?
     let pauseRequest: UUID?
+    let onPlaybackStarted: @MainActor () -> Void
+    let onPlaybackTimeChanged: @MainActor (Double) -> Void
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var playback = LessonPlayback()
 
@@ -290,6 +303,15 @@ private struct NativeLessonPlayer: View {
         .onAppear(perform: load)
         .onDisappear { playback.unload() }
         .onChange(of: pauseRequest) { _, _ in playback.pause() }
+        .onChange(of: playback.isPlaying) { _, playing in
+            if playing { onPlaybackStarted() }
+        }
+        .onChange(of: playback.position) { _, seconds in
+            if !playback.isLoading { onPlaybackTimeChanged(seconds) }
+        }
+        .onChange(of: playback.isLoading) { _, loading in
+            if !loading, playback.failure == nil { onPlaybackTimeChanged(playback.position) }
+        }
         .onChange(of: scenePhase) { _, phase in
             if phase != .active { playback.pause() }
         }
@@ -310,6 +332,7 @@ private struct YouTubeLessonPlayer: View {
     let end: Double?
     let pauseRequest: UUID?
     let onPlaybackStarted: @MainActor () -> Void
+    let onPlaybackTimeChanged: @MainActor (Double) -> Void
     @Environment(\.scenePhase) private var scenePhase
     @State private var failed = false
     @State private var retryID = UUID()
@@ -326,7 +349,8 @@ private struct YouTubeLessonPlayer: View {
         VStack(alignment: .leading, spacing: 10) {
             YouTubeLessonWebView(videoID: videoID, start: start, end: end,
                                  isActive: scenePhase == .active, pauseRequest: pauseRequest,
-                                 onPlaybackStarted: onPlaybackStarted, failed: $failed)
+                                 onPlaybackStarted: onPlaybackStarted,
+                                 onPlaybackTimeChanged: onPlaybackTimeChanged, failed: $failed)
                 .frame(height: 210)
                 .id("\(videoID)|\(start ?? -1)|\(end ?? -1)|\(retryID)")
             if failed {
@@ -353,14 +377,17 @@ private struct YouTubeLessonWebView: UIViewRepresentable {
     let isActive: Bool
     let pauseRequest: UUID?
     let onPlaybackStarted: @MainActor () -> Void
+    let onPlaybackTimeChanged: @MainActor (Double) -> Void
     @Binding var failed: Bool
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(videoID: videoID, onPlaybackStarted: onPlaybackStarted, failed: $failed)
+        Coordinator(videoID: videoID, onPlaybackStarted: onPlaybackStarted,
+                    onPlaybackTimeChanged: onPlaybackTimeChanged, failed: $failed)
     }
 
     func makeUIView(context: Context) -> WKWebView {
         context.coordinator.lastPauseRequest = pauseRequest
+        context.coordinator.isActive = isActive
         let configuration = WKWebViewConfiguration()
         configuration.allowsInlineMediaPlayback = true
         configuration.mediaTypesRequiringUserActionForPlayback = .all
@@ -398,20 +425,62 @@ private struct YouTubeLessonWebView: UIViewRepresentable {
         <script>
         // The official iframe API reports actual playback, including native player controls.
         // Loading and cuing the video never starts it automatically.
+        var plurifoldClock = null;
+        var plurifoldLastTime = null;
+        var plurifoldReady = false;
+        var plurifoldDisposed = false;
+        var plurifoldActive = \(isActive ? "true" : "false");
         function reportPlurifoldPlayback() {
+          if (plurifoldDisposed || !plurifoldActive) return;
           window.webkit.messageHandlers.\(Coordinator.messageName).postMessage({
             event: 'playing', videoID: '\(videoID)', nonce: '\(context.coordinator.bridgeNonce)'
           });
         }
+        function reportPlurifoldTime() {
+          var player = window.plurifoldYouTubePlayer;
+          if (plurifoldDisposed || !plurifoldActive || !plurifoldReady || !player) return;
+          var seconds = player.getCurrentTime();
+          if (typeof seconds !== 'number' || !Number.isFinite(seconds) || seconds < 0 || seconds > 86400000) return;
+          if (plurifoldLastTime !== null && Math.abs(seconds - plurifoldLastTime) < 0.04) return;
+          plurifoldLastTime = seconds;
+          window.webkit.messageHandlers.\(Coordinator.messageName).postMessage({
+            event: 'time', videoID: '\(videoID)', nonce: '\(context.coordinator.bridgeNonce)', seconds: seconds
+          });
+        }
+        window.plurifoldSuspendClock = function () {
+          plurifoldActive = false;
+          if (plurifoldClock !== null) clearInterval(plurifoldClock);
+          plurifoldClock = null;
+        };
+        window.plurifoldResumeClock = function () {
+          plurifoldActive = true;
+          if (plurifoldDisposed || !plurifoldReady || plurifoldClock !== null) return;
+          reportPlurifoldTime();
+          // Keep sampling while paused, so a seek still updates the transcript.
+          plurifoldClock = setInterval(reportPlurifoldTime, 350);
+        };
+        window.plurifoldDisposePlayer = function () {
+          plurifoldDisposed = true;
+          window.plurifoldSuspendClock();
+          if (window.plurifoldYouTubePlayer && typeof window.plurifoldYouTubePlayer.destroy === 'function') {
+            window.plurifoldYouTubePlayer.destroy();
+          }
+          window.plurifoldYouTubePlayer = null;
+        };
+        window.addEventListener('pagehide', window.plurifoldDisposePlayer, { once: true });
         window.onYouTubeIframeAPIReady = function () {
+          if (plurifoldDisposed) return;
           window.plurifoldYouTubePlayer = new YT.Player('plurifold-youtube-player', {
             events: {
               onReady: function (event) {
+                plurifoldReady = true;
+                if (plurifoldActive) window.plurifoldResumeClock();
                 if (event.target.getPlayerState() === YT.PlayerState.PLAYING) {
                   reportPlurifoldPlayback();
                 }
               },
               onStateChange: function (event) {
+                reportPlurifoldTime();
                 if (event.data === YT.PlayerState.PLAYING) {
                   reportPlurifoldPlayback();
                 }
@@ -429,6 +498,12 @@ private struct YouTubeLessonWebView: UIViewRepresentable {
     func updateUIView(_ webView: WKWebView, context: Context) {
         context.coordinator.failed = $failed
         context.coordinator.onPlaybackStarted = onPlaybackStarted
+        context.coordinator.onPlaybackTimeChanged = onPlaybackTimeChanged
+        if context.coordinator.isActive != isActive {
+            context.coordinator.isActive = isActive
+            let method = isActive ? "plurifoldResumeClock" : "plurifoldSuspendClock"
+            webView.evaluateJavaScript("window.\(method) && window.\(method)();", completionHandler: nil)
+        }
         if !isActive || context.coordinator.lastPauseRequest != pauseRequest {
             webView.pauseAllMediaPlayback(completionHandler: nil)
         }
@@ -438,6 +513,8 @@ private struct YouTubeLessonWebView: UIViewRepresentable {
     static func dismantleUIView(_ webView: WKWebView, coordinator: Coordinator) {
         coordinator.isDismantled = true
         coordinator.onPlaybackStarted = {}
+        coordinator.onPlaybackTimeChanged = { _ in }
+        webView.evaluateJavaScript("window.plurifoldDisposePlayer && window.plurifoldDisposePlayer();", completionHandler: nil)
         webView.configuration.userContentController.removeScriptMessageHandler(forName: Coordinator.messageName)
         webView.pauseAllMediaPlayback(completionHandler: nil)
         webView.stopLoading()
@@ -453,12 +530,16 @@ private struct YouTubeLessonWebView: UIViewRepresentable {
         weak var webView: WKWebView?
         var originHost: String?
         var isDismantled = false
+        var isActive = true
         var onPlaybackStarted: @MainActor () -> Void
+        var onPlaybackTimeChanged: @MainActor (Double) -> Void
         var failed: Binding<Bool>
         var lastPauseRequest: UUID?
-        init(videoID: String, onPlaybackStarted: @escaping @MainActor () -> Void, failed: Binding<Bool>) {
+        init(videoID: String, onPlaybackStarted: @escaping @MainActor () -> Void,
+             onPlaybackTimeChanged: @escaping @MainActor (Double) -> Void, failed: Binding<Bool>) {
             self.videoID = videoID
             self.onPlaybackStarted = onPlaybackStarted
+            self.onPlaybackTimeChanged = onPlaybackTimeChanged
             self.failed = failed
         }
 
@@ -466,17 +547,27 @@ private struct YouTubeLessonWebView: UIViewRepresentable {
             // Accept only this embed's small main-frame callback, never messages sent
             // directly by the cross-origin iframe, a navigated page, or a discarded player.
             let origin = message.frameInfo.securityOrigin
-            guard !isDismantled, message.name == Self.messageName,
+            guard !isDismantled, isActive, message.name == Self.messageName,
                   let webView, message.webView === webView,
                   userContentController === webView.configuration.userContentController,
                   message.frameInfo.isMainFrame,
                   origin.protocol == "https", origin.host == originHost,
                   origin.port == 0 || origin.port == 443,
-                  let body = message.body as? [String: Any], body.count == 3,
-                  body["event"] as? String == "playing",
+                  let body = message.body as? [String: Any],
+                  let event = body["event"] as? String,
                   body["videoID"] as? String == videoID,
                   body["nonce"] as? String == bridgeNonce else { return }
-            onPlaybackStarted()
+            switch event {
+            case "playing" where body.count == 3:
+                onPlaybackStarted()
+            case "time" where body.count == 4:
+                guard let number = body["seconds"] as? NSNumber,
+                      CFGetTypeID(number) != CFBooleanGetTypeID() else { return }
+                let seconds = number.doubleValue
+                guard seconds.isFinite, seconds >= 0, seconds <= 86_400_000 else { return }
+                onPlaybackTimeChanged(seconds)
+            default: break
+            }
         }
 
         func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {

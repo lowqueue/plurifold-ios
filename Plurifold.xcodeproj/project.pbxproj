@@ -37,6 +37,17 @@
 			isa = PBXBuildFile;
 			fileRef = 398BC9AAAA4AE036C54B4E26;
 		};
+		70CD3A1001587DC7A8A6EDE9 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			name = LessonTranscriptTimeline.swift;
+			path = Plurifold/Models/LessonTranscriptTimeline.swift;
+			sourceTree = SOURCE_ROOT;
+		};
+		4146F7FCA5819F34D97F73C0 = {
+			isa = PBXBuildFile;
+			fileRef = 70CD3A1001587DC7A8A6EDE9;
+		};
 		65CECF22CA27676898E2093C = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -125,6 +136,17 @@
 			isa = PBXBuildFile;
 			fileRef = 67E282A4ADCD2A1325542B48;
 		};
+		6CCE791C99C49FA04D320090 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			name = LessonPlaybackSheet.swift;
+			path = Plurifold/Views/LessonPlaybackSheet.swift;
+			sourceTree = SOURCE_ROOT;
+		};
+		78460AFBAE18CEA0D5891148 = {
+			isa = PBXBuildFile;
+			fileRef = 6CCE791C99C49FA04D320090;
+		};
 		28695C701D4556AE7F77EA26 = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -202,6 +224,17 @@
 			isa = PBXBuildFile;
 			fileRef = A496D34654A89E2D75E0C8E8;
 		};
+		5618201D1727379BC085170B = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			name = ReaderSelectionBar.swift;
+			path = Plurifold/Views/ReaderSelectionBar.swift;
+			sourceTree = SOURCE_ROOT;
+		};
+		48E468FF6DC55740BF2A46AF = {
+			isa = PBXBuildFile;
+			fileRef = 5618201D1727379BC085170B;
+		};
 		94B76FF09A0E87A3AA6A566D = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -234,6 +267,17 @@
 		755638EA3B255CE6699E85C1 = {
 			isa = PBXBuildFile;
 			fileRef = 32B9269786FD6312633ADD2C;
+		};
+		6DA01B97B48F10D329182A98 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			name = SentenceStudySheet.swift;
+			path = Plurifold/Views/SentenceStudySheet.swift;
+			sourceTree = SOURCE_ROOT;
+		};
+		8F5C796E4B3C7BF6560D1ECA = {
+			isa = PBXBuildFile;
+			fileRef = 6DA01B97B48F10D329182A98;
 		};
 		37B982ABA9965D7F0D443853 = {
 			isa = PBXFileReference;
@@ -301,6 +345,17 @@
 			isa = PBXBuildFile;
 			fileRef = C5ADB574442B4FC237C5578E;
 		};
+		4A593D179A84AA763459AB64 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			name = LessonTranscriptTimelineTests.swift;
+			path = PlurifoldTests/LessonTranscriptTimelineTests.swift;
+			sourceTree = SOURCE_ROOT;
+		};
+		2A2DF71F7EE313CF7F57E349 = {
+			isa = PBXBuildFile;
+			fileRef = 4A593D179A84AA763459AB64;
+		};
 		98A52FBD2A999FC18F1ADC67 = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -334,6 +389,17 @@
 			isa = PBXBuildFile;
 			fileRef = 2CAAD1237BE18426D8F28DD2;
 		};
+		613C048CC301C47E4F97449D = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			name = ReadingSentenceTests.swift;
+			path = PlurifoldTests/ReadingSentenceTests.swift;
+			sourceTree = SOURCE_ROOT;
+		};
+		5AC76136B058CFE0363E83D3 = {
+			isa = PBXBuildFile;
+			fileRef = 613C048CC301C47E4F97449D;
+		};
 		AEB66B25AAAAAE17E5207641 = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -365,6 +431,7 @@
 				8C08A5ADDD248587ADD3C470,
 				91D3016F519CF3CC3A4036A1,
 				398BC9AAAA4AE036C54B4E26,
+				70CD3A1001587DC7A8A6EDE9,
 				65CECF22CA27676898E2093C,
 				489F135F79503D26C6230310,
 				FCCDE74481761E321180F995,
@@ -373,6 +440,7 @@
 				8F0C391B8A9BBAEA1293B623,
 				27B800BF2A67A1979D115795,
 				67E282A4ADCD2A1325542B48,
+				6CCE791C99C49FA04D320090,
 				28695C701D4556AE7F77EA26,
 				274AF5D5DF6DE1E8B5693295,
 				551CA7DC3E8BCF66A500A7C1,
@@ -380,9 +448,11 @@
 				CB83AE2569A2E8514406BD32,
 				74BA000BB8654EDBD9234CB5,
 				A496D34654A89E2D75E0C8E8,
+				5618201D1727379BC085170B,
 				94B76FF09A0E87A3AA6A566D,
 				6ED438A287D1A257E821DDEF,
 				32B9269786FD6312633ADD2C,
+				6DA01B97B48F10D329182A98,
 				37B982ABA9965D7F0D443853,
 				5C27279515916A0EF6D55024,
 				EB736CFFA0B82792D7C2658E,
@@ -396,9 +466,11 @@
 		D60409337774CCE94860379A = {
 			isa = PBXGroup;
 			children = (
+				4A593D179A84AA763459AB64,
 				98A52FBD2A999FC18F1ADC67,
 				F6EF041952115A4BBD5BCABB,
 				2CAAD1237BE18426D8F28DD2,
+				613C048CC301C47E4F97449D,
 				AEB66B25AAAAAE17E5207641,
 			);
 			name = PlurifoldTests;
@@ -429,6 +501,7 @@
 				064F4F85BBCA5BFBAD73D552,
 				73FEF8B1AC743D430673C4C6,
 				F197E690FA9B9CA7CA0CD842,
+				4146F7FCA5819F34D97F73C0,
 				652A0B32870875637629454C,
 				DF144BFA758030CD5E5BCE46,
 				6BE4D1623D292EFDB86172C6,
@@ -437,6 +510,7 @@
 				EA26215B2CBBB6E4A0843930,
 				38D2436C76464B6888E6D73A,
 				1189CD96FECD08F49A6AABEA,
+				78460AFBAE18CEA0D5891148,
 				925FBE29E4DACFD93A142C87,
 				FB7CE91BE72F5689BE1DA125,
 				205BD47E7B7D8A2EF076AD3C,
@@ -444,9 +518,11 @@
 				E1C965005A51C44B9BAC63C3,
 				50F9201B28DF0EE4A22F8C73,
 				842F52A8E5ECFA0C28985415,
+				48E468FF6DC55740BF2A46AF,
 				C8D5E789B0EAA4C9DAD54F1F,
 				7DAED73717D5268D9F69C61B,
 				755638EA3B255CE6699E85C1,
+				8F5C796E4B3C7BF6560D1ECA,
 				47109B9DAE50B344A675BF3A,
 				762E183886E467C74CEB4DA9,
 				85AAF029264BBF1D4BC9F171,
@@ -473,9 +549,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2A2DF71F7EE313CF7F57E349,
 				65524EE3EE75525C71F7956E,
 				F562DE94BB7A2DA290597243,
 				0F72CEBFF839F4875FFB6B41,
+				5AC76136B058CFE0363E83D3,
 				0FB00C0B29D9AE6685ACF9F0,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

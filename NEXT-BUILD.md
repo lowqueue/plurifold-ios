@@ -2,7 +2,7 @@
 
 Your signing setup already works. Use the existing GitHub repository, Codemagic application, and TestFlight group.
 
-This package adds course folders, a continuous reader, direct media playback, and touch-and-drag word selection. The existing website API, Unicode correction, and supplied app icon remain in use. Download the ZIP again to get this revision, then commit the upload and start a new build.
+This revision adds a separate player panel, following transcripts, fixed sentence study, visible word markers, hold-and-drag selection without a Select toggle, and tap-away clearing. Download the ZIP again, commit all extracted files, and start a new build. The website and existing signing setup need no changes for this update.
 
 ## 1. Extract the full source ZIP
 
@@ -23,9 +23,9 @@ This package contains the full project. Do not upload the ZIP itself or add an e
 1. Open [lowqueue/plurifold-ios](https://github.com/lowqueue/plurifold-ios), select branch **main**, and return to the repository's top-level file list.
 2. Choose **Add file → Upload files**.
 3. From the extracted folder, select all of its files and folders and drag them into GitHub's upload area. Wait for the upload queue to finish.
-4. Confirm that nested files are included, especially `Plurifold/Views/SelectablePassage.swift`, `Plurifold/Views/LiveCourseView.swift`, `Plurifold/Models/ReadingDocument.swift`, and `PlurifoldTests/MobileLibraryIndexTests.swift`. Root documents alone are not the complete update.
-5. Enter **Improve reader selection and organize course chapters** as the commit message. Select **Commit directly to the main branch** and click **Commit changes**.
-6. Wait for GitHub to return to the repository. Refresh it and confirm that a new commit appears. Open **Plurifold → Models → ReadingDocument.swift** and **Plurifold → Views → LiveCourseView.swift** to verify that the new folders and files reached the repository.
+4. Confirm that nested files are included, especially `Plurifold/Views/SelectablePassage.swift`, `Plurifold/Views/LessonPlaybackSheet.swift`, `Plurifold/Views/SentenceStudySheet.swift`, and `Plurifold/Models/LessonTranscriptTimeline.swift`. Root documents alone are not the complete update.
+5. Enter **Add player transcript panel and improve word selection** as the commit message. Select **Commit directly to the main branch** and click **Commit changes**.
+6. Wait for GitHub to return to the repository. Refresh it and confirm that a new commit appears. Open **Plurifold → Views → LessonPlaybackSheet.swift** and **PlurifoldTests → LessonTranscriptTimelineTests.swift** to verify that the new files reached the repository.
 
 If GitHub's upload button stalls again, check whether that commit actually appeared before starting a build. A reliable alternative is GitHub Desktop: clone this same repository, copy the extracted project contents into the clone, replace matching files, then **Commit to main → Push origin**. Both steps are required to send the changes to GitHub.
 
