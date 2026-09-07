@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <title>Plurifold app icon</title>
+  <desc>A dark green lowercase p and terminal cursor on a light green background.</desc>
+  <rect width="1024" height="1024" fill="#D5E2CA"/>
+  <g fill="#294435">
+    <path fill-rule="evenodd" d="M240 300H425C553 300 618 365 618 470C618 576 553 640 425 640H334V756H240ZM334 390V550H421C488 550 524 524 524 470C524 416 488 390 421 390Z"/>
+    <path d="M672 552H808V640H672Z"/>
+  </g>
+</svg>
