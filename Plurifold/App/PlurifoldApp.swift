@@ -46,27 +46,29 @@ private struct SignedInRoot: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            AppMasthead()
-            AppLanguageBar()
-            TabView(selection: $studyScope.tab) {
-                LiveHomeView()
-                    .tabItem { Label("Home", systemImage: "house") }
-                    .tag(MobileStudyTab.home)
-                LiveWordsView()
-                    .tabItem { Label("Words", systemImage: "bookmark") }
-                    .tag(MobileStudyTab.words)
-                LiveReviewView()
-                    .tabItem { Label("Review", systemImage: "rectangle.on.rectangle") }
-                    .tag(MobileStudyTab.review)
-                AccountView()
-                    .tabItem { Label("Account", systemImage: "person.crop.circle") }
-                    .tag(MobileStudyTab.account)
+        SidebarNavigationContainer {
+            VStack(spacing: 0) {
+                AppMasthead()
+                AppLanguageBar()
+                TabView(selection: $studyScope.tab) {
+                    LiveHomeView()
+                        .tabItem { Label("Home", systemImage: "house") }
+                        .tag(MobileStudyTab.home)
+                    LiveWordsView()
+                        .tabItem { Label("Words", systemImage: "bookmark") }
+                        .tag(MobileStudyTab.words)
+                    LiveReviewView()
+                        .tabItem { Label("Review", systemImage: "rectangle.on.rectangle") }
+                        .tag(MobileStudyTab.review)
+                    AccountView()
+                        .tabItem { Label("Account", systemImage: "person.crop.circle") }
+                        .tag(MobileStudyTab.account)
+                }
+                .toolbarBackground(Palette.surface, for: .tabBar)
+                .toolbarBackground(.visible, for: .tabBar)
             }
-            .toolbarBackground(Palette.surface, for: .tabBar)
-            .toolbarBackground(.visible, for: .tabBar)
+            .background(Palette.header.ignoresSafeArea(edges: .top))
         }
-        .background(Palette.header.ignoresSafeArea(edges: .top))
         .tint(Palette.accent)
         .environmentObject(store)
         .environmentObject(studyScope)

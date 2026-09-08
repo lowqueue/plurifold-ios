@@ -8,20 +8,12 @@ struct AppMasthead: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            Menu {
-                Button("Home", systemImage: "house") { studyScope.showLanguagePicker() }
-                Button("Library", systemImage: "books.vertical") {
-                    if let language = studyScope.language { studyScope.selectLanguage(language) }
-                    else { studyScope.showLanguagePicker() }
-                }
-                Button("Words", systemImage: "bookmark") { studyScope.tab = .words }
-                Button("Review", systemImage: "rectangle.on.rectangle") { studyScope.tab = .review }
-            } label: {
+            Button { studyScope.isSidebarPresented = true } label: {
                 Image(systemName: "line.3.horizontal")
                     .frame(width: 44, height: 44)
                     .contentShape(Rectangle())
             }
-            .accessibilityLabel("Navigation")
+            .accessibilityLabel("Open navigation menu")
             Button { studyScope.showLanguagePicker() } label: {
                 PlurifoldLogo()
                     .frame(minHeight: 44)

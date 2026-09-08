@@ -2,6 +2,14 @@
 
 Updated on 2026-09-08. The development workspace runs Linux and has no Xcode or native iOS simulator. Historical build results and current source checks are separated below.
 
+## Contextual edge navigation and sidebar
+
+- A rightward physical left-edge swipe opens the sidebar while browsing. Only the active Home tab with a course or lesson as its final route goes back, removing exactly one destination. An inactive Home reader cannot hijack Words, Review, or Account. A captured tab/path guard rejects stale and repeated completions; tiny, vertical, reversed, and cancelled gestures perform no navigation.
+- A root UIKit edge observer uses dynamic failure priority over competing pan recognizers, including native interactive-pop. It does not replace UIKit delegates or globally disable native back gestures. The observer rejects modal presentations and navigation transitions, consumes recognized-but-uncommitted swipes, and removes itself on teardown. Edge hit-testing uses controller coordinates so landscape safe-area insets do not exclude the physical edge.
+- The persistent tab and navigation hosts retain their identity. The menu button and edge gesture share one sidebar, containing existing navigation, the selected language, colorway, and lighting. The panel supports Close, outside tap, leftward dismissal, VoiceOver escape, scrollable larger text, and Reduce Motion. Content underneath is inactive while the sidebar is open; sign-out recreates the per-account scope.
+- All 58 Swift files grammar-parse without errors. Project generation validates 148 object references, including 45 app sources, 13 test sources, and three resources. Whitespace checks pass. Six new XCTest methods cover browsing, nested back navigation, inactive tabs, stale completions, open-sidebar blocking, and slow-pull/fling thresholds, bringing the suite to 116 methods. These tests have not executed locally.
+- Independent source review checked gesture priority, controller attachment, modal exclusion, stable root identity, and landscape coordinates. This workspace has no Swift compiler, Xcode, or iOS simulator. Native compilation, XCTest execution, actual touch feel, rapid swipes, modal dismissal, and accessibility rendering require Codemagic and the iPhone checklist in NEXT-BUILD.md.
+
 ## Native course activities and outline
 
 The supplied recording shows oversized catalogue cards reused for course chapters, an extra native navigation/search bar, and generic transcript readers where the website uses structured exercises. The old API also treated GeoFL image paths as paragraph text for activities without an audio transcript. The recording supports layout/reflow problems, not a newly attributed native crash.

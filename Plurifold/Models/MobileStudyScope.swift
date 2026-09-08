@@ -17,15 +17,44 @@ enum MobileStudyRoute: Hashable {
     }
 }
 
+/// Capture when recognition begins so a delayed swipe cannot navigate a different screen.
+struct MobileEdgeNavigationIntent: Equatable {
+    enum Action { case sidebar, back }
+    let tab: MobileStudyTab
+    let path: [MobileStudyRoute]
+
+    var action: Action {
+        guard tab == .home, let destination = path.last else { return .sidebar }
+        switch destination {
+        case .course, .lesson: return .back
+        case .library: return .sidebar
+        }
+    }
+}
+
 /// Owned by the signed-in root, so changing accounts starts with no language.
 @MainActor
 final class MobileStudyScope: ObservableObject {
     @Published private(set) var language: MobileLanguageOption?
     @Published var tab: MobileStudyTab = .home
     @Published var homePath: [MobileStudyRoute] = []
+    @Published var isSidebarPresented = false
+
+    var edgeNavigationIntent: MobileEdgeNavigationIntent {
+        MobileEdgeNavigationIntent(tab: tab, path: homePath)
+    }
+
+    func completeEdgeNavigation(_ intent: MobileEdgeNavigationIntent) {
+        guard !isSidebarPresented, edgeNavigationIntent == intent else { return }
+        switch intent.action {
+        case .sidebar: isSidebarPresented = true
+        case .back: homePath.removeLast()
+        }
+    }
 
     func selectLanguage(_ language: MobileLanguageOption) {
         guard MobileLanguageKey.normalized(language.code) != nil else { return }
+        isSidebarPresented = false
         self.language = language
         // Replace the destinations, never the NavigationStack displaying them.
         homePath = [.library(language)]
@@ -33,6 +62,7 @@ final class MobileStudyScope: ObservableObject {
     }
 
     func showLanguagePicker() {
+        isSidebarPresented = false
         homePath = []
         tab = .home
     }

@@ -14,6 +14,7 @@ Codemagic runs a finite build job on a cloud Mac. It regenerates the Xcode proje
 
 ## What this build adds
 
+- Swipe right from the **left edge** while browsing to open the sidebar. Inside a course or lesson, the same swipe goes back one screen. The menu button opens the sidebar directly, with Home, current-language Library, Words, Review, Account, and appearance controls. Close it with the X, an outside tap, or a leftward swipe.
 - Email and password sign-in with your existing website account. Session tokens are stored in the device Keychain, refreshed when needed, and validated when restoring a saved login.
 - Live published lessons and the signed-in user's private saved lessons. The prepared course catalog contains four course collections with 75 entries, alongside the shared and account-specific library content available to that user.
 - **Home** shows the available languages with flags. Choose a language to open its **Courses** and **Lessons**; there is no **All languages** option. Each course opens as a folder containing its chapters; independent lessons stay grouped by channel. Search, Words, and Review stay within the chosen language. Return to Home or use Change in Words/Review to switch languages. No vocabulary is shown until you choose one; signing out resets the choice.

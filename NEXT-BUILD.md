@@ -4,7 +4,7 @@ Use the existing GitHub repository, Codemagic application, and TestFlight group.
 
 ## Start the build
 
-1. Open [lowqueue/plurifold-ios](https://github.com/lowqueue/plurifold-ios) and confirm branch **main** shows **Restore structured course activities and clean up iPhone navigation**.
+1. Open [lowqueue/plurifold-ios](https://github.com/lowqueue/plurifold-ios) and confirm branch **main** shows **Add contextual edge navigation and a language-aware sidebar**.
 2. Open **plurifold-ios** in Codemagic. Select **main** and refresh the configuration if needed.
 3. Choose **Start new build → Plurifold - TestFlight**.
 4. Confirm the build overview shows the latest GitHub commit. Rebuilding an older commit will not include this update.
@@ -14,6 +14,12 @@ Codemagic regenerates the Xcode project, runs the native test suite on its Mac, 
 After Apple's processing completes, assign the build to your existing internal testing group if needed. Open **TestFlight → Plurifold → Update** on your iPhone.
 
 ## Check this revision
+
+- From Home, a language library, Words, Review, and Account, swipe right from the physical left edge. The sidebar should slide in after a deliberate pull or a short fling. The hamburger opens the same panel. Tap outside it, use Close, or swipe left across the drawer to dismiss it.
+- Open a course, then a chapter. Each left-edge swipe should go back exactly one screen: chapter → outline → library. Only the next swipe at the library opens the sidebar. Check a standalone video lesson too; its native back button must still work without a double pop.
+- Leave a chapter in Home's stack, switch to Words or Review, and edge-swipe. It must open the sidebar without popping the inactive chapter. Sidebar Words/Review should keep the selected language; Home allows a different language and Library returns to that language's library.
+- Try tiny, cancelled, reversed, and mostly vertical edge movements, plus normal text selection and scrolling away from the edge. Swipe rapidly twice, switch tabs during a gesture, background the app, and try the edge with the player, dictionary/AI details, source image, or account sheet open. No hidden destination should change under a modal sheet.
+- Test the sidebar in each colorway, portrait/landscape, and larger text. Test Reduce Motion, the menu/Close buttons with VoiceOver, and the accessibility escape gesture. Sidebar content should scroll independently while the screen behind it remains inactive.
 
 - Open Georgian → GeoFL A1 → Point and identify, then Match words to objects. The activity should show the original worksheet and instructions, with audio available above it. Enlarge the source and use Done to close it.
 - Use Previous and Next, then Back to course. Each activity should start at its top, the outline should retain its place, and chapter changes must not accumulate a stack of readers or move the tab bar.

@@ -129,6 +129,101 @@ final class MobileStudyScopeTests: XCTestCase {
         XCTAssertEqual(scope.homePath, changedLanguagePath)
     }
 
+    func testEdgeSwipeOpensSidebarAtHomeAndLanguageLibraryWithoutChangingLanguage() {
+        let scope = MobileStudyScope()
+        scope.completeEdgeNavigation(scope.edgeNavigationIntent)
+        XCTAssertTrue(scope.isSidebarPresented)
+        XCTAssertTrue(scope.homePath.isEmpty)
+
+        let italian = language("it-IT", "Italian")
+        scope.selectLanguage(italian)
+        XCTAssertFalse(scope.isSidebarPresented)
+        scope.completeEdgeNavigation(scope.edgeNavigationIntent)
+        XCTAssertTrue(scope.isSidebarPresented)
+        XCTAssertEqual(scope.homePath, [.library(italian)])
+        XCTAssertEqual(scope.language, italian)
+    }
+
+    func testEdgeSwipePopsOneCourseOrLessonAndDoesNotOpenSidebar() {
+        let scope = MobileStudyScope()
+        let italian = language("it-IT", "Italian")
+        scope.selectLanguage(italian)
+        scope.homePath.append(.course(id: "course", search: "greeting"))
+        scope.homePath.append(.lesson(id: "chapter"))
+        scope.completeEdgeNavigation(scope.edgeNavigationIntent)
+        XCTAssertEqual(scope.homePath, [.library(italian), .course(id: "course", search: "greeting")])
+        XCTAssertFalse(scope.isSidebarPresented)
+        scope.completeEdgeNavigation(scope.edgeNavigationIntent)
+        XCTAssertEqual(scope.homePath, [.library(italian)])
+        XCTAssertFalse(scope.isSidebarPresented)
+
+        scope.homePath.append(.lesson(id: "video"))
+        scope.completeEdgeNavigation(scope.edgeNavigationIntent)
+        XCTAssertEqual(scope.homePath, [.library(italian)])
+        XCTAssertFalse(scope.isSidebarPresented)
+    }
+
+    func testInactiveHomeReaderDoesNotHijackOtherTabsEdgeSwipe() {
+        for tab in [MobileStudyTab.words, .review, .account] {
+            let scope = MobileStudyScope()
+            scope.selectLanguage(language("it-IT", "Italian"))
+            scope.homePath.append(.course(id: "course", search: ""))
+            scope.homePath.append(.lesson(id: "chapter"))
+            let retainedPath = scope.homePath
+            scope.tab = tab
+            scope.completeEdgeNavigation(scope.edgeNavigationIntent)
+            XCTAssertTrue(scope.isSidebarPresented)
+            XCTAssertEqual(scope.tab, tab)
+            XCTAssertEqual(scope.homePath, retainedPath)
+        }
+    }
+
+    func testStaleOrRepeatedEdgeCompletionCannotPopAnotherScreen() {
+        let scope = MobileStudyScope()
+        scope.selectLanguage(language("it-IT", "Italian"))
+        scope.homePath.append(.course(id: "course", search: ""))
+        scope.homePath.append(.lesson(id: "chapter"))
+        let intent = scope.edgeNavigationIntent
+        scope.completeEdgeNavigation(intent)
+        let outline = scope.homePath
+        scope.completeEdgeNavigation(intent)
+        XCTAssertEqual(scope.homePath, outline)
+        XCTAssertFalse(scope.isSidebarPresented)
+
+        let courseIntent = scope.edgeNavigationIntent
+        scope.tab = .review
+        scope.completeEdgeNavigation(courseIntent)
+        XCTAssertEqual(scope.homePath, outline)
+        XCTAssertFalse(scope.isSidebarPresented)
+
+        scope.selectLanguage(language("et-EE", "Estonian"))
+        let changedLanguagePath = scope.homePath
+        scope.completeEdgeNavigation(courseIntent)
+        XCTAssertEqual(scope.homePath, changedLanguagePath)
+        XCTAssertFalse(scope.isSidebarPresented)
+    }
+
+    func testSidebarAlreadyOpenBlocksBackNavigationUnderneath() {
+        let scope = MobileStudyScope()
+        scope.homePath = [.lesson(id: "lesson")]
+        let intent = scope.edgeNavigationIntent
+        scope.isSidebarPresented = true
+        scope.completeEdgeNavigation(intent)
+        XCTAssertEqual(scope.homePath, [.lesson(id: "lesson")])
+        XCTAssertTrue(scope.isSidebarPresented)
+        XCTAssertFalse(MobileStudyScope().isSidebarPresented)
+    }
+
+    func testEdgeSwipeAcceptsDeliberateSlowPullAndQuickFling() {
+        XCTAssertTrue(MobileEdgeSwipe.shouldComplete(horizontal: 96, vertical: 8, velocity: 0, width: 390))
+        XCTAssertTrue(MobileEdgeSwipe.shouldComplete(horizontal: 26, vertical: 4, velocity: 900, width: 390))
+        XCTAssertFalse(MobileEdgeSwipe.shouldComplete(horizontal: 12, vertical: 0, velocity: 900, width: 390))
+        XCTAssertFalse(MobileEdgeSwipe.shouldComplete(horizontal: 30, vertical: 4, velocity: 30, width: 390))
+        XCTAssertFalse(MobileEdgeSwipe.shouldComplete(horizontal: 100, vertical: 150, velocity: 900, width: 390))
+        XCTAssertFalse(MobileEdgeSwipe.shouldComplete(horizontal: -120, vertical: 0, velocity: -900, width: 390))
+        XCTAssertFalse(MobileEdgeSwipe.shouldComplete(horizontal: 100, vertical: 0, velocity: -250, width: 390))
+    }
+
     private func activityCourse() -> MobileCourse {
         MobileCourse(id: "course", title: "Course", languageCode: "it-IT", languageName: "Italian",
                      lessons: ["first", "second"].map { id in
