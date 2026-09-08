@@ -8,20 +8,21 @@ struct LiveLibraryView: View {
     let languageCode: String
     let languageName: String
 
-    private var catalog: MobileLanguageCatalog { MobileLanguageCatalog(courses: store.courses) }
-    private var language: MobileLanguageOption? {
-        guard let key = MobileLanguageKey.normalized(languageCode) else { return nil }
-        return catalog.languages.first { MobileLanguageKey.normalized($0.code) == key }
-    }
-    private var shelf: MobileLibraryShelf {
-        MobileLibraryShelf(courses: catalog.courses(for: language?.code ?? languageCode),
-                           search: search, channel: selectedChannel, level: selectedLevel)
-    }
-
     var body: some View {
+        // One catalog/shelf snapshot per render; every row and filter reads the
+        // same result instead of sorting and grouping the library repeatedly.
+        let catalog = MobileLanguageCatalog(courses: store.courses)
+        let languageKey = MobileLanguageKey.normalized(languageCode)
+        let language = catalog.languages.first {
+            MobileLanguageKey.normalized($0.code) == languageKey
+        }
+        let shelf = MobileLibraryShelf(courses: catalog.courses(for: language?.code ?? languageCode),
+                                       search: search, channel: selectedChannel, level: selectedLevel)
+        let savedCounts = savedCountsByLesson()
+
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 28) {
-                introduction
+                introduction(name: language?.name ?? languageName)
                 if let notice = store.notice {
                     LibraryNoticeRow(notice: notice).libraryFrame()
                 }
@@ -41,9 +42,46 @@ struct LiveLibraryView: View {
                         description: Text("Your saved words are still in Words and Review. Choose another language or pull down to refresh."))
                 } else {
                     if !shelf.courseFolders.isEmpty {
-                        courseSection
+                        sectionHeading("Courses", subtitle: "Foundations and guided study")
+                        ForEach(shelf.courseFolders) { folder in
+                            NavigationLink(value: MobileStudyRoute.course(id: folder.id, search: search)) {
+                                courseRow(folder)
+                            }
+                            .buttonStyle(.plain)
+                        }
                     }
-                    lessonSection
+                    sectionHeading("Lessons", subtitle: "Explore your language through real content")
+                    filters(shelf: shelf)
+                    if shelf.lessonGroups.isEmpty {
+                        ContentUnavailableView("No matching lessons", systemImage: "magnifyingglass",
+                            description: Text("Try another search, channel, or ILR level."))
+                        if !search.isEmpty || !selectedChannel.isEmpty || !selectedLevel.isEmpty {
+                            Button("Clear filters") {
+                                search = ""
+                                selectedChannel = ""
+                                selectedLevel = ""
+                            }
+                            .font(.subheadline.monospaced())
+                            .frame(minHeight: 44)
+                        }
+                    }
+                    // Section exposes each card to the outer lazy stack. An
+                    // enclosing VStack would eagerly load every thumbnail.
+                    ForEach(shelf.lessonGroups) { group in
+                        Section {
+                            ForEach(group.lessons) { item in
+                                NavigationLink(value: MobileStudyRoute.lesson(id: item.lesson.id)) {
+                                    LibraryLessonRow(lesson: item.lesson,
+                                        hasPosition: store.positions[item.lesson.id] != nil,
+                                        source: item.source,
+                                        savedCount: savedCounts[LibrarySavedCountKey(lesson: item.lesson)] ?? 0)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        } header: {
+                            levelHeading(group)
+                        }
+                    }
                 }
             }
             .padding(.horizontal, 16)
@@ -71,9 +109,9 @@ struct LiveLibraryView: View {
         }
     }
 
-    private var introduction: some View {
+    private func introduction(name: String) -> some View {
         VStack(alignment: .leading, spacing: 14) {
-            Eyebrow(text: "\(language?.name ?? languageName) curriculum")
+            Eyebrow(text: "\(name) curriculum")
                 .font(.caption2)
             Text("Library")
                 .font(.largeTitle.monospaced())
@@ -85,57 +123,7 @@ struct LiveLibraryView: View {
         }
     }
 
-    private var courseSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            sectionHeading("Courses", subtitle: "Foundations and guided study")
-            ForEach(shelf.courseFolders) { folder in
-                NavigationLink {
-                    LiveCourseView(courseID: folder.id, initialSearch: search)
-                } label: {
-                    courseRow(folder)
-                }
-                .buttonStyle(.plain)
-            }
-        }
-    }
-
-    private var lessonSection: some View {
-        VStack(alignment: .leading, spacing: 24) {
-            sectionHeading("Lessons", subtitle: "Explore your language through real content")
-            filters
-            if shelf.lessonGroups.isEmpty {
-                ContentUnavailableView("No matching lessons", systemImage: "magnifyingglass",
-                    description: Text("Try another search, channel, or ILR level."))
-                if !search.isEmpty || !selectedChannel.isEmpty || !selectedLevel.isEmpty {
-                    Button("Clear filters") {
-                        search = ""
-                        selectedChannel = ""
-                        selectedLevel = ""
-                    }
-                    .font(.subheadline.monospaced())
-                    .frame(minHeight: 44)
-                }
-            }
-            ForEach(shelf.lessonGroups) { group in
-                VStack(alignment: .leading, spacing: 16) {
-                    levelHeading(group)
-                    ForEach(group.lessons) { item in
-                        NavigationLink {
-                            LiveReaderView(lessonID: item.lesson.id)
-                        } label: {
-                            LibraryLessonRow(lesson: item.lesson,
-                                             hasPosition: store.positions[item.lesson.id] != nil,
-                                             source: item.source,
-                                             savedCount: savedCount(for: item.lesson))
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-            }
-        }
-    }
-
-    private var filters: some View {
+    private func filters(shelf: MobileLibraryShelf) -> some View {
         VStack(alignment: .leading, spacing: 22) {
             VStack(alignment: .leading, spacing: 5) {
                 Text("Library filters").font(.subheadline.monospaced())
@@ -234,11 +222,13 @@ struct LiveLibraryView: View {
         .accessibilityAddTraits(.isHeader)
     }
 
-    private func savedCount(for lesson: MobileLessonSummary) -> Int {
-        store.words.filter {
-            $0.sourceLessonID == lesson.id
-                && MobileLanguageKey.normalized($0.languageCode) == MobileLanguageKey.normalized(lesson.languageCode)
-        }.count
+    private func savedCountsByLesson() -> [LibrarySavedCountKey: Int] {
+        store.words.reduce(into: [:]) { counts, word in
+            guard let lessonID = word.sourceLessonID else { return }
+            let key = LibrarySavedCountKey(lessonID: lessonID,
+                                          languageCode: MobileLanguageKey.normalized(word.languageCode))
+            counts[key, default: 0] += 1
+        }
     }
 
     private func lessonCountLabel(_ count: Int) -> String {
@@ -272,6 +262,20 @@ struct LiveLibraryView: View {
         .libraryFrame()
         .accessibilityElement(children: .combine)
         .accessibilityHint("Opens the chapters in this course")
+    }
+}
+
+private struct LibrarySavedCountKey: Hashable {
+    let lessonID: String
+    let languageCode: String?
+
+    init(lessonID: String, languageCode: String?) {
+        self.lessonID = lessonID
+        self.languageCode = languageCode
+    }
+
+    init(lesson: MobileLessonSummary) {
+        self.init(lessonID: lesson.id, languageCode: MobileLanguageKey.normalized(lesson.languageCode))
     }
 }
 

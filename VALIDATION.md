@@ -2,6 +2,15 @@
 
 Updated on 2026-09-08. The development workspace runs Linux and has no Xcode or native iOS simulator. Historical build results and current source checks are separated below.
 
+## Library navigation crash report and SVG masthead
+
+The user reported a crash whenever opening any language's library after the layout update. No native crash report was supplied, and this Linux workspace cannot reproduce an iOS runtime crash. The strongest source-level regression was setting a new navigation path and simultaneously replacing the NavigationStack identity on every language selection. This is a likely cause, not confirmed crash-log attribution.
+
+- Replaced stack identity resets and view-based links with one stable stack and a typed route array for library, course, and lesson. Switching language replaces the full route array; returning Home clears it. Catalog counts no longer participate in destination identity. Navigation tests cover nested switching, returning to the same library, returning Home, and catalog refresh stability.
+- Flattened lesson cards into the lazy stack's sections so offscreen thumbnails are deferred. The shelf and saved-entry counts are computed once per body evaluation rather than rebuilt for every row/filter.
+- Ported the exact path, even-odd counter, and cursor rectangle from design/AppIcon.svg into SwiftUI shapes. A local cancellable task matches the 1.2-second SVG period and 65/35% visible/hidden duty cycle. Reduce Motion and inactive scenes show a steady cursor; disappearance cancels the task. No WebView or remote image is needed.
+- All 50 Swift files grammar-parse. Project generation validates 132 object references, with 38 app sources, 12 test sources and three resources. The suite now contains 100 XCTest methods, not executed in this workspace. Whitespace checks and independent source review passed. Native compilation, crash resolution, lazy-loading behavior, and animation need Codemagic and iPhone verification.
+
 ## Website library layout and appearance
 
 - Ported the website masthead, account initial, persistent language bar, compact typography, bordered course folders, cover cards, channel/ILR filters, and ILR grouping into native SwiftUI. Existing Words, Review, playback, and selection flows remain native. Language switching clears prior course/reader destinations.

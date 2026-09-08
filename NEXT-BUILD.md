@@ -4,7 +4,7 @@ Use the existing GitHub repository, Codemagic application, and TestFlight group.
 
 ## Start the build
 
-1. Open [lowqueue/plurifold-ios](https://github.com/lowqueue/plurifold-ios) and confirm branch **main** shows **Bring the website library and colorways to iOS**.
+1. Open [lowqueue/plurifold-ios](https://github.com/lowqueue/plurifold-ios) and confirm branch **main** shows **Stabilize library navigation and animate the Plurifold logo**.
 2. Open **plurifold-ios** in Codemagic. Select **main** and refresh the configuration if needed.
 3. Choose **Start new build → Plurifold - TestFlight**.
 4. Confirm the build overview shows the latest GitHub commit. Rebuilding an older commit will not include this update.
@@ -14,6 +14,9 @@ Codemagic regenerates the Xcode project, runs the native test suite on its Mac, 
 After Apple's processing completes, assign the build to your existing internal testing group if needed. Open **TestFlight → Plurifold → Update** on your iPhone.
 
 ## Check this revision
+
+- From Home, open each available language. Open a standalone lesson and a nested course chapter, then go back. Use the header to switch language while inside a reader, return Home, and select the same language again. The stack should change destinations without replacing its navigation host. The reported crash has no attached native crash log, so its resolution still needs this device check.
+- Confirm the supplied p-and-cursor mark appears beside the top-left wordmark. It should blink every 1.2 seconds (780 ms visible, 420 ms hidden), remain visible with Reduce Motion, and resume after backgrounding.
 
 - Open a language from Home. Check the Library cover cards, channel/ILR filters, real word coverage, saved-entry counts, and separate course folders. Test a lesson without an image and offline image loading; it should retain the language cover.
 - Scroll down. The masthead, account initial, and language switcher should remain accessible. Choose another language while in a course or reader; the new language's library must replace the old destination. Words and Review must follow the new language.

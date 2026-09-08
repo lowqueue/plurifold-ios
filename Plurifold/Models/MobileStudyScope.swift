@@ -5,27 +5,35 @@ enum MobileStudyTab: Hashable {
     case home, words, review, account
 }
 
+/// Stable values own the entire Home stack, including nested course readers.
+/// Catalog counts are intentionally not part of a destination's identity.
+enum MobileStudyRoute: Hashable {
+    case library(languageCode: String, languageName: String)
+    case course(id: String, search: String)
+    case lesson(id: String)
+
+    static func library(_ language: MobileLanguageOption) -> Self {
+        .library(languageCode: language.code, languageName: language.name)
+    }
+}
+
 /// Owned by the signed-in root, so changing accounts starts with no language.
 @MainActor
 final class MobileStudyScope: ObservableObject {
     @Published private(set) var language: MobileLanguageOption?
     @Published var tab: MobileStudyTab = .home
-    @Published var homePath: [MobileLanguageOption] = []
-    @Published private(set) var homeRootID = UUID()
+    @Published var homePath: [MobileStudyRoute] = []
 
     func selectLanguage(_ language: MobileLanguageOption) {
         guard MobileLanguageKey.normalized(language.code) != nil else { return }
         self.language = language
-        homePath = [language]
-        // A header switch also closes view-based chapter/reader destinations.
-        homeRootID = UUID()
+        // Replace the destinations, never the NavigationStack displaying them.
+        homePath = [.library(language)]
         tab = .home
     }
 
     func showLanguagePicker() {
         homePath = []
-        // Also dismiss destinations opened with a view-based NavigationLink.
-        homeRootID = UUID()
         tab = .home
     }
 
@@ -37,7 +45,6 @@ final class MobileStudyScope: ObservableObject {
         } else {
             self.language = nil
             homePath = []
-            homeRootID = UUID()
         }
     }
 }

@@ -44,9 +44,7 @@ struct LiveCourseView: View {
                         .accessibilityAddTraits(.isHeader)
                         Rectangle().fill(Palette.line).frame(height: 1)
                         ForEach(folder.chapters) { lesson in
-                            NavigationLink {
-                                LiveReaderView(lessonID: lesson.id)
-                            } label: {
+                            NavigationLink(value: MobileStudyRoute.lesson(id: lesson.id)) {
                                 LibraryLessonRow(lesson: lesson, hasPosition: store.positions[lesson.id] != nil,
                                                  source: course.title, savedCount: savedCount(for: lesson),
                                                  showsCover: false)

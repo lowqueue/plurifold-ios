@@ -2,7 +2,7 @@
 
 A native SwiftUI app for the same Plurifold account, lessons, and saved vocabulary you use on the website. Requires iOS 17 or later on iPhone or iPad.
 
-The live app has reached an iPhone through TestFlight. This revision brings the website's Library design into SwiftUI: a colored masthead, account-initial menu, persistent language switcher, bordered cover cards, channel and estimated ILR filters, and real vocabulary coverage. Verdant, Vermilion, and Blue Hour are available alongside System, Light, and Dark lighting. Appearance stays on this device. Reading, playback, automatic 2–14-word AI explanations, dictionary details, Words, and Review remain native. Run Codemagic to compile and test this revision before installing it.
+The live app has reached an iPhone through TestFlight. This revision repairs a likely navigation regression when opening language libraries: one stable navigation stack now owns library, course, and lesson destinations. Library cards load lazily, and the masthead uses the supplied SVG's p-and-cursor geometry with its original blink timing. The website-style layout, colorways, native reading and playback, automatic phrase explanations, dictionary details, Words, and Review remain available. Run Codemagic to compile and test this revision before installing it.
 
 ## Install this update from Windows
 

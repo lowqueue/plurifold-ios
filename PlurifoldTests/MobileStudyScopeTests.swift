@@ -9,26 +9,22 @@ final class MobileStudyScopeTests: XCTestCase {
         scope.tab = .words
         scope.selectLanguage(italian)
         XCTAssertEqual(scope.language, italian)
-        XCTAssertEqual(scope.homePath, [italian])
+        XCTAssertEqual(scope.homePath, [.library(italian)])
         XCTAssertEqual(scope.tab, .home)
 
         scope.tab = .review
-        let oldRoot = scope.homeRootID
         let estonian = language("et-EE", "Estonian")
         scope.selectLanguage(estonian)
-        XCTAssertNotEqual(scope.homeRootID, oldRoot)
         XCTAssertEqual(scope.language?.code, "et-EE")
-        XCTAssertEqual(scope.homePath, [estonian])
+        XCTAssertEqual(scope.homePath, [.library(estonian)])
     }
 
     func testPickerPopsToHomeWithoutLosingCurrentChoiceAndNewAccountStartsEmpty() {
         let scope = MobileStudyScope()
         scope.selectLanguage(language("it-IT", "Italian"))
         scope.tab = .review
-        let previousRoot = scope.homeRootID
         scope.showLanguagePicker()
         XCTAssertTrue(scope.homePath.isEmpty)
-        XCTAssertNotEqual(scope.homeRootID, previousRoot)
         XCTAssertEqual(scope.tab, .home)
         XCTAssertEqual(scope.language?.code, "it-IT")
 
@@ -47,6 +43,46 @@ final class MobileStudyScopeTests: XCTestCase {
         XCTAssertTrue(scope.homePath.isEmpty)
         XCTAssertTrue(MobileVocabularyIndex(words: [word("et", "et-EE", "Estonian")],
                                             languageCode: scope.language?.code).words.isEmpty)
+    }
+
+    func testSwitchingLanguagesReplacesEveryNestedDestination() {
+        let scope = MobileStudyScope()
+        let italian = language("it-IT", "Italian")
+        let estonian = language("et-EE", "Estonian")
+        scope.selectLanguage(italian)
+        scope.homePath.append(.course(id: "course", search: "greetings"))
+        scope.homePath.append(.lesson(id: "chapter"))
+        scope.selectLanguage(estonian)
+        XCTAssertEqual(scope.homePath, [.library(estonian)])
+        XCTAssertEqual(scope.language, estonian)
+        XCTAssertEqual(scope.tab, .home)
+    }
+
+    func testLibraryMenuReturnsToCurrentLibraryAndHomeClearsFullPath() {
+        let scope = MobileStudyScope()
+        let italian = language("it-IT", "Italian")
+        scope.selectLanguage(italian)
+        scope.homePath.append(.lesson(id: "cats"))
+        scope.selectLanguage(italian)
+        XCTAssertEqual(scope.homePath, [.library(italian)])
+        scope.homePath.append(.course(id: "course", search: ""))
+        scope.homePath.append(.lesson(id: "chapter"))
+        scope.showLanguagePicker()
+        XCTAssertTrue(scope.homePath.isEmpty)
+        XCTAssertEqual(scope.language, italian)
+    }
+
+    func testCatalogRefreshDoesNotChangeAnOpenNavigationPath() {
+        let scope = MobileStudyScope()
+        let italian = language("it-IT", "Italian")
+        scope.selectLanguage(italian)
+        scope.homePath.append(.lesson(id: "cats"))
+        let path = scope.homePath
+        let updated = MobileLanguageOption(code: "it-IT", name: "Italian", courseCount: 4, lessonCount: 12)
+        scope.reconcile(languages: [updated])
+        XCTAssertEqual(scope.language, updated)
+        XCTAssertEqual(scope.homePath, path)
+        XCTAssertEqual(MobileStudyRoute.library(italian), MobileStudyRoute.library(updated))
     }
 
     func testHomeRetainsSavedOnlyLanguagesAndDeduplicatesCodeVariants() {

@@ -67,13 +67,19 @@ struct LiveHomeView: View {
             }
             .studyBackground()
             .toolbar(studyScope.homePath.isEmpty ? .hidden : .visible, for: .navigationBar)
-            .navigationDestination(for: MobileLanguageOption.self) { language in
-                LiveLibraryView(languageCode: language.code, languageName: language.name)
+            .navigationDestination(for: MobileStudyRoute.self) { route in
+                switch route {
+                case .library(let code, let name):
+                    LiveLibraryView(languageCode: code, languageName: name)
+                case .course(let id, let search):
+                    LiveCourseView(courseID: id, initialSearch: search)
+                case .lesson(let id):
+                    LiveReaderView(lessonID: id)
+                }
             }
             .refreshable { await store.refresh() }
             .task { if !store.hasLoaded { await store.refresh() } }
         }
-        .id(studyScope.homeRootID)
     }
 
     private func languageTile(_ language: MobileLanguageOption) -> some View {
