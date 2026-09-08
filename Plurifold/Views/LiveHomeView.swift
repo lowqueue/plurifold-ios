@@ -3,29 +3,38 @@ import SwiftUI
 struct LiveHomeView: View {
     @EnvironmentObject private var store: LiveLibraryStore
     @EnvironmentObject private var studyScope: MobileStudyScope
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private var languages: [MobileLanguageOption] {
         MobileStudyLanguageList(courses: store.courses, words: store.words).languages
     }
 
+    private var columns: [GridItem] {
+        dynamicTypeSize.isAccessibilitySize
+            ? [GridItem(.flexible())]
+            : [GridItem(.adaptive(minimum: 148), spacing: 12)]
+    }
+
     var body: some View {
         NavigationStack(path: $studyScope.homePath) {
             ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        RoundedRectangle(cornerRadius: 2).fill(Palette.warm).frame(width: 32, height: 4)
-                        Text("Choose a language")
-                            .font(.largeTitle.weight(.bold))
+                VStack(alignment: .leading, spacing: 20) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Your languages")
+                            .font(.title2.monospaced().weight(.medium))
                             .foregroundStyle(Palette.ink)
-                        Text("Your lessons, saved words, and review stay with the language you choose.")
-                            .font(.subheadline)
+                        Text("Choose a language to open your lessons, saved words, and review.")
+                            .font(.footnote.monospaced())
                             .foregroundStyle(Palette.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
 
                     if let notice = store.notice {
                         LibraryNoticeRow(notice: notice)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .studyCard()
+                            .padding(14)
+                            .background(Palette.surface, in: RoundedRectangle(cornerRadius: 4))
+                            .overlay(RoundedRectangle(cornerRadius: 4).stroke(Palette.line, lineWidth: 1))
                     }
 
                     if store.isLoading && languages.isEmpty {
@@ -41,7 +50,7 @@ struct LiveHomeView: View {
                                  : "Your library couldn’t load. Check your connection and try again.")
                         }
                     } else {
-                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: 16)], spacing: 16) {
+                        LazyVGrid(columns: columns, spacing: 12) {
                             ForEach(languages) { language in
                                 Button { studyScope.selectLanguage(language) } label: {
                                     languageTile(language)
@@ -52,12 +61,12 @@ struct LiveHomeView: View {
                     }
                 }
                 .frame(maxWidth: 760, alignment: .leading)
-                .padding(24)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 22)
                 .frame(maxWidth: .infinity)
             }
             .studyBackground()
-            .navigationTitle("Home")
-            .navigationBarTitleDisplayMode(.inline)
+            .toolbar(studyScope.homePath.isEmpty ? .hidden : .visible, for: .navigationBar)
             .navigationDestination(for: MobileLanguageOption.self) { language in
                 LiveLibraryView(languageCode: language.code, languageName: language.name)
             }
@@ -68,35 +77,41 @@ struct LiveHomeView: View {
     }
 
     private func languageTile(_ language: MobileLanguageOption) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+        let isSelected = MobileLanguageKey.normalized(studyScope.language?.code)
+            == MobileLanguageKey.normalized(language.code)
+
+        return VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text(language.flag)
-                    .font(.system(size: 38))
+                    .font(.title)
                     .accessibilityHidden(true)
                 Spacer(minLength: 8)
-                Image(systemName: "chevron.right")
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "arrow.up.right")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(Palette.accent)
                     .accessibilityHidden(true)
             }
             Text(language.name)
-                .font(.title3.weight(.semibold))
+                .font(.headline.monospaced().weight(.medium))
                 .foregroundStyle(Palette.ink)
                 .fixedSize(horizontal: false, vertical: true)
-            Text(language.contentDescription.isEmpty ? savedDescription(language) : language.contentDescription)
-                .font(.caption)
-                .foregroundStyle(Palette.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            if MobileLanguageKey.normalized(studyScope.language?.code) == MobileLanguageKey.normalized(language.code) {
-                Label("Selected", systemImage: "checkmark.circle.fill")
-                    .font(.caption.weight(.medium))
-                    .foregroundStyle(Palette.green)
+            VStack(alignment: .leading, spacing: 4) {
+                if !language.contentDescription.isEmpty {
+                    Text(language.contentDescription)
+                }
+                Text(savedDescription(language))
             }
+            .font(.caption.monospaced())
+            .foregroundStyle(Palette.secondary)
+            .fixedSize(horizontal: false, vertical: true)
         }
-        .frame(maxWidth: .infinity, minHeight: 122, alignment: .topLeading)
-        .studyCard()
-        .contentShape(RoundedRectangle(cornerRadius: 12))
+        .frame(maxWidth: .infinity, minHeight: 120, alignment: .topLeading)
+        .padding(14)
+        .background(isSelected ? Palette.field : Palette.surface, in: RoundedRectangle(cornerRadius: 4))
+        .overlay(RoundedRectangle(cornerRadius: 4).stroke(isSelected ? Palette.accent : Palette.line, lineWidth: 1))
+        .contentShape(RoundedRectangle(cornerRadius: 4))
         .accessibilityElement(children: .combine)
+        .accessibilityValue(isSelected ? "Selected" : "")
         .accessibilityHint("Selects \(language.name) for lessons, words, and review")
     }
 

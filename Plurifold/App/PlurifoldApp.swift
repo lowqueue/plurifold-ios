@@ -4,6 +4,7 @@ import SwiftUI
 @MainActor
 struct PlurifoldApp: App {
     @StateObject private var session = NativeSession()
+    @State private var appearance = AppAppearance.shared
 
     var body: some Scene {
         WindowGroup {
@@ -23,6 +24,9 @@ struct PlurifoldApp: App {
                 }
             }
             .environmentObject(session)
+            .environment(appearance)
+            .preferredColorScheme(appearance.preferredColorScheme)
+            .tint(Palette.accent)
             .task { await session.restore() }
         }
     }
@@ -42,20 +46,27 @@ private struct SignedInRoot: View {
     }
 
     var body: some View {
-        TabView(selection: $studyScope.tab) {
-            LiveHomeView()
-                .tabItem { Label("Home", systemImage: "house") }
-                .tag(MobileStudyTab.home)
-            LiveWordsView()
-                .tabItem { Label("Words", systemImage: "bookmark") }
-                .tag(MobileStudyTab.words)
-            LiveReviewView()
-                .tabItem { Label("Review", systemImage: "rectangle.on.rectangle") }
-                .tag(MobileStudyTab.review)
-            account
-                .tabItem { Label("Account", systemImage: "person.crop.circle") }
-                .tag(MobileStudyTab.account)
+        VStack(spacing: 0) {
+            AppMasthead()
+            AppLanguageBar()
+            TabView(selection: $studyScope.tab) {
+                LiveHomeView()
+                    .tabItem { Label("Home", systemImage: "house") }
+                    .tag(MobileStudyTab.home)
+                LiveWordsView()
+                    .tabItem { Label("Words", systemImage: "bookmark") }
+                    .tag(MobileStudyTab.words)
+                LiveReviewView()
+                    .tabItem { Label("Review", systemImage: "rectangle.on.rectangle") }
+                    .tag(MobileStudyTab.review)
+                AccountView()
+                    .tabItem { Label("Account", systemImage: "person.crop.circle") }
+                    .tag(MobileStudyTab.account)
+            }
+            .toolbarBackground(Palette.surface, for: .tabBar)
+            .toolbarBackground(.visible, for: .tabBar)
         }
+        .background(Palette.header.ignoresSafeArea(edges: .top))
         .tint(Palette.accent)
         .environmentObject(store)
         .environmentObject(studyScope)
@@ -99,61 +110,4 @@ private struct SignedInRoot: View {
         }
     }
 
-    private var account: some View {
-        NavigationStack {
-            List {
-                Section("Signed in") {
-                    if let email = session.user?.email {
-                        Text(email).textSelection(.enabled)
-                    }
-                    Text("Your saved vocabulary and reading places are shared with your Plurifold account.")
-                        .font(.subheadline)
-                        .foregroundStyle(Palette.secondary)
-                }
-                .listRowBackground(Palette.surface)
-
-                Section {
-                    Button {
-                        Task { await store.refresh() }
-                    } label: {
-                        HStack {
-                            Label("Refresh library and study data", systemImage: "arrow.clockwise")
-                            Spacer()
-                            if store.isLoading { ProgressView() }
-                        }
-                    }
-                    .disabled(store.isLoading || store.isSaving)
-                    Link(destination: NativeSession.baseURL) {
-                        Label("Open Plurifold website", systemImage: "arrow.up.right.square")
-                    }
-                }
-                .listRowBackground(Palette.surface)
-
-                if let notice = store.notice {
-                    Section {
-                        Label(notice, systemImage: "exclamationmark.circle")
-                            .font(.subheadline)
-                            .foregroundStyle(Palette.secondary)
-                    }
-                    .listRowBackground(Palette.surface)
-                }
-
-                Section {
-                    Button("Sign out", role: .destructive) {
-                        Task { await session.signOut() }
-                    }
-                    .disabled(session.isBusy || store.isSaving)
-                } footer: {
-                    if store.isSaving {
-                        Text("Finishing your study changes before signing out…")
-                    }
-                }
-                .listRowBackground(Palette.surface)
-            }
-            .listStyle(.insetGrouped)
-            .scrollContentBackground(.hidden)
-            .studyBackground()
-            .navigationTitle("Account")
-        }
-    }
 }

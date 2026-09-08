@@ -36,9 +36,12 @@ final class ReaderSelectionBar: UIView {
     required init?(coder: NSCoder) { fatalError("Use init(frame:)") }
 
     func update(notice: String?) {
+        backgroundColor = UIColor(Palette.accent)
+        label.textColor = UIColor(Palette.accentInk)
+        icon.tintColor = UIColor(Palette.accentInk)
         label.text = notice ?? "Word details"
         icon.image = UIImage(systemName: notice == nil ? "text.magnifyingglass" : "text.badge.minus")
-        layer.borderColor = UIColor(Palette.line).cgColor
+        layer.borderColor = UIColor(Palette.line).resolvedColor(with: traitCollection).cgColor
         accessibilityTraits = notice == nil ? .button : [.staticText, .notEnabled]
         accessibilityLabel = notice ?? "Open word details"
         accessibilityHint = notice == nil ? "Shows dictionary meanings. AI explanations are optional." : nil

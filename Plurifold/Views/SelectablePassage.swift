@@ -33,6 +33,7 @@ struct PassageSelection: Identifiable {
 @MainActor
 struct SelectablePassage: UIViewRepresentable {
     let text: String
+    var appearanceRevision = Palette.revisionID
     var highlights: [String] = []
     var clearSelectionRequest: UUID? = nil
     var onClearSelection: () -> Void = {}
@@ -119,6 +120,7 @@ struct SelectablePassage: UIViewRepresentable {
         private var renderedHighlights: [String] = []
         private var renderedFont: UIFont?
         private var renderedLanguage = ""
+        private var renderedAppearance = ""
         private var wordRanges: [NSRange] = []
         private var wordGeometry = PassageWordGeometryIndex(hits: [])
         private var needsWordGeometry = true
@@ -155,7 +157,9 @@ struct SelectablePassage: UIViewRepresentable {
             let fontChanged = renderedFont != font
             let wordsChanged = textChanged || renderedLanguage != parent.languageCode
             let highlightsChanged = textChanged || renderedHighlights != parent.highlights
-            guard textChanged || fontChanged || wordsChanged || highlightsChanged else { return }
+            let appearance = "\(parent.appearanceRevision):\(view.traitCollection.userInterfaceStyle.rawValue)"
+            let appearanceChanged = renderedAppearance != appearance
+            guard textChanged || fontChanged || wordsChanged || highlightsChanged || appearanceChanged else { return }
             if textChanged {
                 view.highlightLayoutManager.cancelReaction()
                 utf16Length = parent.text.utf16.count
@@ -172,7 +176,7 @@ struct SelectablePassage: UIViewRepresentable {
             if highlightsChanged {
                 savedRanges = PassageTextSelection.highlightRanges(in: parent.text, terms: parent.highlights)
             }
-            if textChanged || fontChanged {
+            if textChanged || fontChanged || appearanceChanged {
                 let paragraph = NSMutableParagraphStyle()
                 paragraph.lineSpacing = 5
                 paragraph.baseWritingDirection = .natural
@@ -195,6 +199,9 @@ struct SelectablePassage: UIViewRepresentable {
             renderedHighlights = parent.highlights
             renderedFont = font
             renderedLanguage = parent.languageCode
+            renderedAppearance = appearance
+            view.tintColor = UIColor(Palette.ink)
+            view.highlightLayoutManager.invalidateDisplay(forCharacterRange: NSRange(location: 0, length: utf16Length))
         }
 
         /// Text and font edits invalidate layout. Selection changes invalidate
@@ -754,21 +761,9 @@ final class PassageHighlightLayoutManager: NSLayoutManager {
     private var reaction = PassageSelectionReactionState()
     private var reactionLink: CADisplayLink?
 
-    private let normal = UIColor { traits in
-        traits.userInterfaceStyle == .dark
-            ? UIColor(red: 0.38, green: 0.70, blue: 0.79, alpha: 0.20)
-            : UIColor(red: 0.63, green: 0.83, blue: 0.89, alpha: 0.52)
-    }
-    private let saved = UIColor { traits in
-        traits.userInterfaceStyle == .dark
-            ? UIColor(red: 0.80, green: 0.58, blue: 0.18, alpha: 0.42)
-            : UIColor(red: 0.98, green: 0.75, blue: 0.27, alpha: 0.65)
-    }
-    private let selected = UIColor { traits in
-        traits.userInterfaceStyle == .dark
-            ? UIColor(red: 0.27, green: 0.53, blue: 0.68, alpha: 1)
-            : UIColor(red: 0.53, green: 0.76, blue: 0.90, alpha: 1)
-    }
+    private var normal: UIColor { Palette.uiToken }
+    private var saved: UIColor { Palette.uiSavedToken }
+    private var selected: UIColor { Palette.uiSelectedToken }
 
     /// A short local lift is painted beneath the glyphs. It never transforms
     /// the text view or changes line wrapping, and is silent for Reduce Motion.
@@ -806,6 +801,10 @@ final class PassageHighlightLayoutManager: NSLayoutManager {
         super.drawBackground(forGlyphRange: glyphsToShow, at: origin)
         let characters = characterRange(forGlyphRange: glyphsToShow, actualGlyphRange: nil)
         guard let context = UIGraphicsGetCurrentContext() else { return }
+        // Resolve once per draw, rather than allocating a color for every word.
+        let normalColor = normal
+        let savedColor = saved
+        let selectedColor = selected
         let clip = context.boundingBoxOfClipPath
         let fragments = activeRange.map { wordGeometry.selectionFragments(for: $0, displaying: characters) } ?? []
         let activeRects = fragments.map {
@@ -840,14 +839,14 @@ final class PassageHighlightLayoutManager: NSLayoutManager {
         }
         while lower < wordMarks.count, wordMarks[lower].range.location < NSMaxRange(characters) {
             let mark = wordMarks[lower]
-            paint(mark, color: normal)
+            paint(mark, color: normalColor)
             lower += 1
         }
         for mark in savedMarks where NSIntersectionRange(mark.range, characters).length > 0 {
-            paint(mark, color: saved)
+            paint(mark, color: savedColor)
         }
         context.restoreGState()
-        selected.setFill()
+        selectedColor.setFill()
         for rect in activeRects where rect.intersects(clip) {
             UIBezierPath(roundedRect: rect, cornerRadius: 5).fill()
         }
@@ -859,7 +858,7 @@ final class PassageHighlightLayoutManager: NSLayoutManager {
                     let rect = fragment.offsetBy(dx: origin.x, dy: origin.y)
                         .insetBy(dx: -0.5 - lift, dy: 1 - lift * 1.4)
                     guard rect.intersects(clip) else { continue }
-                    selected.setFill()
+                    selectedColor.setFill()
                     let bubble = UIBezierPath(roundedRect: rect, cornerRadius: 5 + lift)
                     bubble.fill()
                     UIColor.white.withAlphaComponent(0.12 * lift).setFill()
@@ -929,7 +928,8 @@ final class PassageTextView: UITextView {
 
     override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
         super.traitCollectionDidChange(previousTraitCollection)
-        if previousTraitCollection?.preferredContentSizeCategory != traitCollection.preferredContentSizeCategory {
+        if previousTraitCollection?.preferredContentSizeCategory != traitCollection.preferredContentSizeCategory
+            || previousTraitCollection?.userInterfaceStyle != traitCollection.userInterfaceStyle {
             onTypographyChange?(self)
         }
         if previousTraitCollection?.userInterfaceStyle != traitCollection.userInterfaceStyle {

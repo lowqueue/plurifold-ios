@@ -19,6 +19,14 @@ struct MobileLessonSummary: Codable, Identifiable, Hashable {
     let paragraphCount: Int
     let kind: String
     let channel: String?
+    // Optional additions keep older catalog responses and test fixtures valid.
+    var thumbnailURL: String? = nil
+    var mediaKind: String? = nil
+    var ilrLevel: String? = nil
+    var wordCount: Int? = nil
+    var uniqueWordCount: Int? = nil
+    var newWordCount: Int? = nil
+    var newWordPercent: Int? = nil
 }
 
 struct MobileLesson: Codable, Identifiable, Hashable {

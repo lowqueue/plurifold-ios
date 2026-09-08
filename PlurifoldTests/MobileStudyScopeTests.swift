@@ -13,8 +13,10 @@ final class MobileStudyScopeTests: XCTestCase {
         XCTAssertEqual(scope.tab, .home)
 
         scope.tab = .review
+        let oldRoot = scope.homeRootID
         let estonian = language("et-EE", "Estonian")
         scope.selectLanguage(estonian)
+        XCTAssertNotEqual(scope.homeRootID, oldRoot)
         XCTAssertEqual(scope.language?.code, "et-EE")
         XCTAssertEqual(scope.homePath, [estonian])
     }

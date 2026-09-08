@@ -1,5 +1,13 @@
 import Foundation
 
+enum LanguageDisplay {
+    static func nativeName(for code: String, fallback: String) -> String {
+        let key = code.lowercased().replacingOccurrences(of: "_", with: "-").split(separator: "-").first.map(String.init) ?? ""
+        return ["it": "Italiano", "es": "Español", "et": "Eesti", "ka": "ქართული",
+                "ru": "Русский", "uk": "Українська", "ja": "日本語"][key] ?? fallback
+    }
+}
+
 struct MobileLanguageOption: Identifiable, Hashable {
     let code: String
     let name: String

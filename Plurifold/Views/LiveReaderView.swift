@@ -42,6 +42,7 @@ struct LiveReaderView: View {
         .studyBackground()
         .tint(Palette.accent)
         .navigationTitle(lesson?.title ?? "Lesson")
+        .toolbar(.visible, for: .navigationBar)
         .navigationBarTitleDisplayMode(.inline)
         .task(id: "\(lessonID)|\(reloadID)") { await load() }
         .safeAreaInset(edge: .bottom, spacing: 0) {

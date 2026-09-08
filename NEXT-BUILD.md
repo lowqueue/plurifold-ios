@@ -4,7 +4,7 @@ Use the existing GitHub repository, Codemagic application, and TestFlight group.
 
 ## Start the build
 
-1. Open [lowqueue/plurifold-ios](https://github.com/lowqueue/plurifold-ios) and confirm branch **main** shows **Explain short selections automatically and simplify Ask**.
+1. Open [lowqueue/plurifold-ios](https://github.com/lowqueue/plurifold-ios) and confirm branch **main** shows **Bring the website library and colorways to iOS**.
 2. Open **plurifold-ios** in Codemagic. Select **main** and refresh the configuration if needed.
 3. Choose **Start new build → Plurifold - TestFlight**.
 4. Confirm the build overview shows the latest GitHub commit. Rebuilding an older commit will not include this update.
@@ -14,6 +14,11 @@ Codemagic regenerates the Xcode project, runs the native test suite on its Mac, 
 After Apple's processing completes, assign the build to your existing internal testing group if needed. Open **TestFlight → Plurifold → Update** on your iPhone.
 
 ## Check this revision
+
+- Open a language from Home. Check the Library cover cards, channel/ILR filters, real word coverage, saved-entry counts, and separate course folders. Test a lesson without an image and offline image loading; it should retain the language cover.
+- Scroll down. The masthead, account initial, and language switcher should remain accessible. Choose another language while in a course or reader; the new language's library must replace the old destination. Words and Review must follow the new language.
+- Tap your initial at top right. Try Verdant, Vermilion, and Blue Hour with Light, Dark, and System. Close and relaunch: the selection should persist. Set Vermilion + Light to match the website recording.
+- Change colorway from an open reader, dismiss Account, and confirm the same reading place, selection, and player state remain. Check the word-details control and system Light/Dark changes. Test larger text and VoiceOver for header controls, cards, and theme choices.
 
 - Hold a player transcript sentence for about **0.45 seconds**. Its original sentence should stay fixed while the player pauses and the study sheet opens.
 - Hold a word for **0.2 seconds**, then drag. Neighbouring selected words should join into one blue shape per line, with a small bubble response and one haptic tick as you cross words. Check reversing, multiline dragging, clear, normal scrolling, and Reduce Motion.

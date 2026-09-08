@@ -2,7 +2,7 @@
 
 A native SwiftUI app for the same Plurifold account, lessons, and saved vocabulary you use on the website. Requires iOS 17 or later on iPhone or iPad.
 
-The live app has reached an iPhone through TestFlight. This revision automatically explains completed selections of 2–14 words, preserves highlighting in every direction, and adds keyboard dismissal inside Word details. Single words keep the nearby dictionary details button. The server uses Wiktionary’s documented page API and enforces the mobile selection limit. Run Codemagic to compile and test this revision before installing it.
+The live app has reached an iPhone through TestFlight. This revision brings the website's Library design into SwiftUI: a colored masthead, account-initial menu, persistent language switcher, bordered cover cards, channel and estimated ILR filters, and real vocabulary coverage. Verdant, Vermilion, and Blue Hour are available alongside System, Light, and Dark lighting. Appearance stays on this device. Reading, playback, automatic 2–14-word AI explanations, dictionary details, Words, and Review remain native. Run Codemagic to compile and test this revision before installing it.
 
 ## Install this update from Windows
 

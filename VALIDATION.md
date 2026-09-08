@@ -2,6 +2,15 @@
 
 Updated on 2026-09-08. The development workspace runs Linux and has no Xcode or native iOS simulator. Historical build results and current source checks are separated below.
 
+## Website library layout and appearance
+
+- Ported the website masthead, account initial, persistent language bar, compact typography, bordered course folders, cover cards, channel/ILR filters, and ILR grouping into native SwiftUI. Existing Words, Review, playback, and selection flows remain native. Language switching clears prior course/reader destinations.
+- All 45 website colorway token definitions match the Swift palettes. Three colorways and System/Light/Dark persist per device using Observation, without changing root identity on appearance changes. UIKit reader colors and the nearby details control explicitly refresh; highlight colors resolve once per drawing pass.
+- Mobile catalog metadata reuses the website's lessonVocabulary, ILR resolver, and validated YouTube thumbnail helper. Summaries contain counts rather than transcripts. Course chapters do not invent coverage, and missing/failed cover images retain the language fallback. Old catalog payloads remain decodable. No database or authentication changes.
+- Eight focused server integration checks pass, including shared coverage, account word-state effects, metadata, transcript boundaries, and preservation of study synchronization. The production server build passed.
+- All 49 Swift files grammar-parse; the deterministic Xcode generator validates 130 object references. The suite contains 97 XCTest methods, including optional metadata compatibility, filtering/course isolation, appearance persistence, and observation. These methods have not run here: this Linux workspace has no Xcode.
+- Independent source review covered iOS 17 API usage, theme invalidation, retained selection/playback, account sheet environment, and navigation teardown. Device checks remain in NEXT-BUILD.md. Native compilation, exact visual fidelity, Dynamic Type, and touch behavior require Codemagic and the iPhone.
+
 ## Current automatic phrase selection, dictionary transport, and Ask dismissal
 
 - Removed the pull-to-open gesture. A 0.20-second hold permits phrase dragging in every direction. Only completed selections of 2–14 lexical words auto-open; more than 14 leaves a nearby reduce-selection message and does not request AI. Single words retain the nearby Word details button. Shared guards cover normal selection, VoiceOver, glossary links, and the Sentence details button.

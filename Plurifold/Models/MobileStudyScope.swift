@@ -17,6 +17,8 @@ final class MobileStudyScope: ObservableObject {
         guard MobileLanguageKey.normalized(language.code) != nil else { return }
         self.language = language
         homePath = [language]
+        // A header switch also closes view-based chapter/reader destinations.
+        homeRootID = UUID()
         tab = .home
     }
 
