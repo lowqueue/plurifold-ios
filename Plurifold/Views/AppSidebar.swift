@@ -7,6 +7,7 @@ enum AppSidebarDestination: Hashable {
 /// The signed-in root owns presentation and navigation. This panel only offers
 /// destinations and the appearance preferences already available in Account.
 struct AppSidebar: View {
+    let isActive: Bool
     let onSelect: (AppSidebarDestination) -> Void
     let onClose: () -> Void
 
@@ -90,11 +91,13 @@ struct AppSidebar: View {
         .buttonStyle(.plain)
         .foregroundStyle(Palette.ink)
         .background(Palette.surface)
-        .overlay(alignment: .trailing) {
-            Rectangle().fill(Palette.line).frame(width: 1)
-        }
-        .task {
+        .task(id: isActive) {
+            guard isActive else {
+                closeFocused = false
+                return
+            }
             await Task.yield()
+            guard !Task.isCancelled else { return }
             closeFocused = true
         }
     }

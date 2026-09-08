@@ -1,85 +1,220 @@
 import SwiftUI
 
-/// Adds chrome around the stable tab/navigation hosts, never replacing them.
+/// Non-observable presentation sample. Reading it at touch-down lets a new drag
+/// catch a settling drawer at its displayed position instead of its target.
+private final class SidebarPresentation {
+    var position: Double = 0
+}
+
+private struct SidebarTranslation: GeometryEffect {
+    var position: Double
+    let travel: CGFloat
+    let inset: CGFloat
+    let presentation: SidebarPresentation
+
+    var animatableData: Double {
+        get { position }
+        set { position = newValue }
+    }
+
+    func effectValue(size: CGSize) -> ProjectionTransform {
+        presentation.position = position
+        return ProjectionTransform(CGAffineTransform(translationX: inset + CGFloat(position - 1) * travel, y: 0))
+    }
+}
+
+/// Drag samples move only the overlay. The tab/navigation hosts keep their
+/// identity, layout, reading position, and selection throughout the interaction.
 struct SidebarNavigationContainer<Content: View>: View {
+    private struct DragSession {
+        let id: UUID
+        let intent: MobileEdgeNavigationIntent
+        let isDrawer: Bool
+        let start: Double
+        let wasOpen: Bool
+    }
+
     @EnvironmentObject private var studyScope: MobileStudyScope
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var position: Double = 0
+    @State private var presentation = SidebarPresentation()
+    @State private var drag: DragSession?
+    @State private var isSurfaceVisible = false
+    @State private var isSettledOpen = false
+    @State private var handledOpen = false
+    @State private var settleToken = UUID()
     private let content: Content
 
     init(@ViewBuilder content: () -> Content) {
         self.content = content()
     }
 
-    private var animation: Animation {
-        reduceMotion ? .easeOut(duration: 0.12) : .spring(response: 0.3, dampingFraction: 0.9)
+    private var settlingAnimation: Animation {
+        reduceMotion ? .easeOut(duration: 0.12) : .spring(response: 0.36, dampingFraction: 0.86)
     }
 
     var body: some View {
         content
-            .allowsHitTesting(!studyScope.isSidebarPresented)
-            .accessibilityHidden(studyScope.isSidebarPresented)
-            .background {
-                EdgeSwipeNavigation(isEnabled: scenePhase == .active && !studyScope.isSidebarPresented,
-                                    intent: studyScope.edgeNavigationIntent) { intent in
-                    withAnimation(animation) { studyScope.completeEdgeNavigation(intent) }
-                }
-            }
+            .allowsHitTesting(!isSurfaceVisible)
+            .accessibilityHidden(isSurfaceVisible)
             .overlay(alignment: .leading) {
                 GeometryReader { geometry in
-                    if studyScope.isSidebarPresented {
-                        ZStack(alignment: .leading) {
-                            Button(action: close) { Color.black.opacity(0.36) }
-                                .buttonStyle(.plain)
-                                .accessibilityLabel("Close navigation menu")
-                                .ignoresSafeArea()
-                                .transition(.opacity)
-                            AppSidebar(onSelect: navigate, onClose: close)
-                                .frame(width: min(340, geometry.size.width * 0.86))
-                                .frame(maxHeight: .infinity)
-                                .background(Palette.surface.ignoresSafeArea())
-                                .overlay(alignment: .trailing) { Rectangle().fill(Palette.line).frame(width: 1) }
-                                .shadow(color: .black.opacity(0.18), radius: 16, x: 5)
-                                .simultaneousGesture(DragGesture(minimumDistance: 20)
-                                    .onEnded { value in
-                                        if MobileEdgeSwipe.shouldComplete(horizontal: Double(-value.translation.width),
-                                            vertical: Double(value.translation.height), velocity: 0,
-                                            width: Double(min(340, geometry.size.width * 0.86))) {
-                                            close()
-                                        }
-                                    })
-                                .accessibilityElement(children: .contain)
-                                .accessibilityLabel("Navigation menu")
-                                .accessibilityAddTraits(.isModal)
-                                .transition(reduceMotion ? .opacity : .move(edge: .leading))
-                        }
-                        .accessibilityAction(.escape, close)
+                    let width = min(340, geometry.size.width * 0.86)
+                    let inset: CGFloat = 10
+                    let travel = width + inset + geometry.safeAreaInsets.leading
+                    let coverage = min(max(position, 0), 1)
+                    let shape = RoundedRectangle(cornerRadius: 24 + 4 * CGFloat(coverage), style: .continuous)
+
+                    ZStack(alignment: .leading) {
+                        Button(action: close) { Color.black.opacity(0.36) }
+                            .buttonStyle(.plain)
+                            .opacity(coverage)
+                            .accessibilityLabel("Close navigation menu")
+                            .ignoresSafeArea()
+
+                        // Keep the panel mounted offscreen, allowing reversal and
+                        // cancellation without remounting its scrolling content.
+                        AppSidebar(isActive: isSettledOpen, onSelect: navigate, onClose: close)
+                            .frame(width: width, height: max(0, geometry.size.height - inset * 2))
+                            .background(Palette.surface)
+                            .clipShape(shape)
+                            .overlay { shape.strokeBorder(Palette.line.opacity(0.9), lineWidth: 1) }
+                            .shadow(color: .black.opacity(0.22 * coverage), radius: 10 + 14 * CGFloat(coverage), x: 4, y: 4)
+                            .modifier(SidebarTranslation(position: position, travel: travel,
+                                                         inset: inset, presentation: presentation))
+                            .allowsHitTesting(isSettledOpen && drag == nil)
+                            .accessibilityElement(children: .contain)
+                            .accessibilityLabel("Navigation menu")
+                            .accessibilityAddTraits(.isModal)
+                            .accessibilityHidden(!isSettledOpen)
                     }
+                    .allowsHitTesting(isSurfaceVisible)
+                    .accessibilityHidden(!isSurfaceVisible)
+                    .accessibilityAction(.escape, close)
+                    .background {
+                        EdgeSwipeNavigation(isEnabled: scenePhase == .active,
+                                            isDrawerVisible: isSurfaceVisible,
+                                            intent: studyScope.edgeNavigationIntent) { event in
+                            handle(event, travel: Double(travel))
+                        }
+                    }
+                    .onChange(of: geometry.size) { _, _ in resetForLayout() }
+                    .onChange(of: geometry.safeAreaInsets) { _, _ in resetForLayout() }
                 }
                 .environment(\.layoutDirection, .leftToRight)
             }
-            .animation(animation, value: studyScope.isSidebarPresented)
-            .onChange(of: scenePhase) { _, phase in
-                if phase != .active { studyScope.isSidebarPresented = false }
+            .onChange(of: studyScope.isSidebarPresented) { _, open in
+                if open != handledOpen {
+                    drag = nil
+                    settle(open: open)
+                }
             }
+            .onChange(of: studyScope.edgeNavigationIntent) { _, _ in
+                if drag != nil {
+                    drag = nil
+                    settle(open: studyScope.isSidebarPresented)
+                }
+            }
+            .onChange(of: scenePhase) { _, phase in
+                if phase != .active {
+                    studyScope.isSidebarPresented = false
+                    resetForLayout()
+                }
+            }
+            .onAppear { resetForLayout() }
+    }
+
+    private func track(_ value: Double) {
+        // Spring animations here would chase the finger and introduce latency.
+        var transaction = Transaction(animation: nil)
+        transaction.disablesAnimations = true
+        withTransaction(transaction) { position = value }
+    }
+
+    private func handle(_ event: NavigationSwipe, travel: Double) {
+        switch event.phase {
+        case .began:
+            guard event.intent == studyScope.edgeNavigationIntent, scenePhase == .active else { return }
+            let isDrawer = event.source == .drawer || event.intent.action == .sidebar
+            let start = isDrawer ? presentation.position : 0
+            settleToken = UUID()
+            drag = DragSession(id: event.id, intent: event.intent, isDrawer: isDrawer,
+                               start: start, wasOpen: studyScope.isSidebarPresented)
+            if isDrawer {
+                isSurfaceVisible = true
+                isSettledOpen = false
+                track(SidebarMotion.position(start: start, translation: Double(event.translation.width),
+                                              width: travel, reduceMotion: reduceMotion))
+            }
+        case .changed:
+            guard let current = drag, current.id == event.id,
+                  current.intent == studyScope.edgeNavigationIntent, current.isDrawer else { return }
+            track(SidebarMotion.position(start: current.start, translation: Double(event.translation.width),
+                                         width: travel, reduceMotion: reduceMotion))
+        case .ended:
+            guard let current = drag, current.id == event.id,
+                  current.intent == studyScope.edgeNavigationIntent else { return }
+            drag = nil
+            if current.isDrawer {
+                track(SidebarMotion.position(start: current.start, translation: Double(event.translation.width),
+                                             width: travel, reduceMotion: reduceMotion))
+                settle(open: SidebarMotion.shouldOpen(start: current.start, translation: Double(event.translation.width),
+                                                       velocity: Double(event.velocity.x), width: travel))
+            } else if MobileEdgeSwipe.shouldComplete(horizontal: Double(event.translation.width),
+                                                     vertical: Double(event.translation.height),
+                                                     velocity: Double(event.velocity.x), width: Double(event.width)) {
+                withAnimation(settlingAnimation) { studyScope.completeEdgeNavigation(current.intent) }
+            }
+        case .cancelled:
+            guard let current = drag, current.id == event.id else { return }
+            drag = nil
+            if current.isDrawer { settle(open: current.wasOpen) }
+        }
+    }
+
+    private func settle(open: Bool) {
+        let token = UUID()
+        settleToken = token
+        handledOpen = open
+        isSettledOpen = false
+        isSurfaceVisible = true
+        studyScope.isSidebarPresented = open
+        withAnimation(settlingAnimation, completionCriteria: .removed) {
+            position = open ? 1 : 0
+        } completion: {
+            guard settleToken == token, drag == nil else { return }
+            isSettledOpen = open
+            isSurfaceVisible = open
+        }
+    }
+
+    private func resetForLayout() {
+        settleToken = UUID()
+        drag = nil
+        let open = studyScope.isSidebarPresented
+        handledOpen = open
+        isSurfaceVisible = open
+        isSettledOpen = open
+        presentation.position = open ? 1 : 0
+        track(open ? 1 : 0)
     }
 
     private func close() {
-        withAnimation(animation) { studyScope.isSidebarPresented = false }
+        drag = nil
+        settle(open: false)
     }
 
     private func navigate(_ destination: AppSidebarDestination) {
-        withAnimation(animation) {
-            studyScope.isSidebarPresented = false
-            switch destination {
-            case .home: studyScope.showLanguagePicker()
-            case .library:
-                if let language = studyScope.language { studyScope.selectLanguage(language) }
-                else { studyScope.showLanguagePicker() }
-            case .words: studyScope.tab = .words
-            case .review: studyScope.tab = .review
-            case .account: studyScope.tab = .account
-            }
+        close()
+        switch destination {
+        case .home: studyScope.showLanguagePicker()
+        case .library:
+            if let language = studyScope.language { studyScope.selectLanguage(language) }
+            else { studyScope.showLanguagePicker() }
+        case .words: studyScope.tab = .words
+        case .review: studyScope.tab = .review
+        case .account: studyScope.tab = .account
         }
     }
 }

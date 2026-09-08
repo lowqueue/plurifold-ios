@@ -2,6 +2,16 @@
 
 Updated on 2026-09-08. The development workspace runs Linux and has no Xcode or native iOS simulator. Historical build results and current source checks are separated below.
 
+## Interactive rounded sidebar
+
+The supplied 15-second recording and the gesture bridge confirm that the previous revision waited until release before showing the menu. It ignored intermediate movement, and the panel had square full-height edges.
+
+- The bridge now streams begin/change/end/cancel events. The drawer tracks horizontal finger movement directly, in both directions, without starting a new animation per sample. The opening recognizer remains active throughout a partial reveal. Release projects the final position using velocity and settles with a damped spring; overscroll has bounded resistance. Reduce Motion retains direct control with clamped endpoints and short, non-spring settling.
+- The complete header and body sit in one continuously rounded panel with 10-point outer insets, one matching outline, and a shadow/scrim that follows reveal progress. The panel stays mounted while closed or dragging. Regrabbing samples the rendered translation, including elastic overshoot, so it can resume from its displayed position.
+- Recognizer cancellation, changed navigation context, scene inactivity, geometry changes, and stale animation callbacks cannot complete an old navigation action. The inactive screen remains blocked until closing animation removal; sidebar controls and accessibility focus become available after opening completes. VoiceOver retains buttons and escape. Existing course/lesson back, modal exclusion, scrolling, and text-selection gesture priority remain.
+- All 60 Swift files grammar-parse. The regenerated project validates 152 object references: 46 app sources, 14 test sources, and three resources. Twelve new motion XCTest cases cover direct tracking, slow pulls, flings, reversal, bounded resistance, reduced motion, invalid input, and catching/reversing an overshoot. The suite now contains 128 XCTest methods. These tests have not run locally.
+- Whitespace checks and independent source review pass. This Linux workspace has no Swift compiler, Xcode, or iOS simulator. Actual spring feel, mid-animation regrabbing, multitouch interruption, sheet transitions, larger text, and rendering still require the Codemagic/iPhone checks in NEXT-BUILD.md.
+
 ## Contextual edge navigation and sidebar
 
 - A rightward physical left-edge swipe opens the sidebar while browsing. Only the active Home tab with a course or lesson as its final route goes back, removing exactly one destination. An inactive Home reader cannot hijack Words, Review, or Account. A captured tab/path guard rejects stale and repeated completions; tiny, vertical, reversed, and cancelled gestures perform no navigation.
