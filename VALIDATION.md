@@ -2,6 +2,12 @@
 
 Updated on 2026-09-08. The development workspace runs Linux and has no Xcode or native iOS simulator. Historical build results and current source checks are separated below.
 
+## Header wordmark correction
+
+The user clarified that the intended header is the full lowercase `plurifold` wordmark and trailing block cursor shown on the website. Replaced the geometric p mark in the masthead with the native wordmark. Its regular monospaced lettering, tracking, cursor proportions, baseline offset, and 1.1-second step blink follow the website's `terminal-wordmark` and `terminal-cursor` styles. Cursor space remains reserved while hidden; Reduce Motion and inactive scenes keep it visible. The existing app icon assets and navigation behavior are unchanged.
+
+Changed Swift source grammar and whitespace checks pass. No native compilation or visual rendering was available locally; Codemagic and the next iPhone build must verify exact typography, larger text, and blinking across all colorways.
+
 ## Library navigation crash report and SVG masthead
 
 The user reported a crash whenever opening any language's library after the layout update. No native crash report was supplied, and this Linux workspace cannot reproduce an iOS runtime crash. The strongest source-level regression was setting a new navigation path and simultaneously replacing the NavigationStack identity on every language selection. This is a likely cause, not confirmed crash-log attribution.

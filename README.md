@@ -2,7 +2,7 @@
 
 A native SwiftUI app for the same Plurifold account, lessons, and saved vocabulary you use on the website. Requires iOS 17 or later on iPhone or iPad.
 
-The live app has reached an iPhone through TestFlight. This revision repairs a likely navigation regression when opening language libraries: one stable navigation stack now owns library, course, and lesson destinations. Library cards load lazily, and the masthead uses the supplied SVG's p-and-cursor geometry with its original blink timing. The website-style layout, colorways, native reading and playback, automatic phrase explanations, dictionary details, Words, and Review remain available. Run Codemagic to compile and test this revision before installing it.
+The live app has reached an iPhone through TestFlight. The masthead now shows the website's full lowercase `plurifold` wordmark with a narrow trailing block cursor and its 1.1-second blink. One stable navigation stack owns library, course, and lesson destinations, and library cards load lazily following the reported navigation crash. The website-style layout, colorways, native reading and playback, automatic phrase explanations, dictionary details, Words, and Review remain available. Run Codemagic to compile and test this revision before installing it.
 
 ## Install this update from Windows
 

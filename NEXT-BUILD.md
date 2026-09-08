@@ -4,7 +4,7 @@ Use the existing GitHub repository, Codemagic application, and TestFlight group.
 
 ## Start the build
 
-1. Open [lowqueue/plurifold-ios](https://github.com/lowqueue/plurifold-ios) and confirm branch **main** shows **Stabilize library navigation and animate the Plurifold logo**.
+1. Open [lowqueue/plurifold-ios](https://github.com/lowqueue/plurifold-ios) and confirm branch **main** shows **Match the header to the website's blinking wordmark**.
 2. Open **plurifold-ios** in Codemagic. Select **main** and refresh the configuration if needed.
 3. Choose **Start new build → Plurifold - TestFlight**.
 4. Confirm the build overview shows the latest GitHub commit. Rebuilding an older commit will not include this update.
@@ -16,7 +16,7 @@ After Apple's processing completes, assign the build to your existing internal t
 ## Check this revision
 
 - From Home, open each available language. Open a standalone lesson and a nested course chapter, then go back. Use the header to switch language while inside a reader, return Home, and select the same language again. The stack should change destinations without replacing its navigation host. The reported crash has no attached native crash log, so its resolution still needs this device check.
-- Confirm the supplied p-and-cursor mark appears beside the top-left wordmark. It should blink every 1.2 seconds (780 ms visible, 420 ms hidden), remain visible with Reduce Motion, and resume after backgrounding.
+- Confirm the top-left header shows the full lowercase `plurifold` wordmark with one narrow block cursor immediately after the final letter, matching the website. The cursor should blink every 1.1 seconds, remain visible with Reduce Motion, and resume after backgrounding. Check all colorways and larger text; the wordmark must not shift as the cursor blinks.
 
 - Open a language from Home. Check the Library cover cards, channel/ILR filters, real word coverage, saved-entry counts, and separate course folders. Test a lesson without an image and offline image loading; it should retain the language cover.
 - Scroll down. The masthead, account initial, and language switcher should remain accessible. Choose another language while in a course or reader; the new language's library must replace the old destination. Words and Review must follow the new language.

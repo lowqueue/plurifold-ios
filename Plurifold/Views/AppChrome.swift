@@ -23,12 +23,9 @@ struct AppMasthead: View {
             }
             .accessibilityLabel("Navigation")
             Button { studyScope.showLanguagePicker() } label: {
-                HStack(spacing: 8) {
-                    PlurifoldLogo().frame(width: 38, height: 27)
-                    Text("plurifold").font(.title3.monospaced())
-                }
-                .frame(minHeight: 44)
-                .contentShape(Rectangle())
+                PlurifoldLogo()
+                    .frame(minHeight: 44)
+                    .contentShape(Rectangle())
             }
             .accessibilityLabel("Plurifold Home")
             Spacer(minLength: 8)
