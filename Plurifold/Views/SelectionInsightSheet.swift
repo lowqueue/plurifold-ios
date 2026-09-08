@@ -30,6 +30,7 @@ struct SelectionInsightSheet: View {
     @State private var isSavingSelection = false
     @State private var didAttemptSave = false
     @FocusState private var questionFocused: Bool
+    @State private var questionFieldFrame: CGRect = .null
 
     private var savedKind: String {
         DefinitionSelection.kind(for: selection.text, languageCode: lesson.languageCode)
@@ -44,8 +45,18 @@ struct SelectionInsightSheet: View {
     }
     private var requestContext: String { InsightText.context(around: selection, utf16Limit: 1_200) }
     private var cacheContext: String { InsightText.context(around: selection, utf16Limit: 2_400) }
+    private var selectionMessage: String? {
+        if DefinitionSelection.exceedsExplanationWordLimit(selection.text, languageCode: lesson.languageCode) {
+            return DefinitionSelection.wordLimitMessage
+        }
+        guard !selection.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              selection.text.utf16.count <= 800 else {
+            return "Select a shorter word or phrase, up to 800 characters, to get an explanation."
+        }
+        return nil
+    }
     private var validSelection: Bool {
-        !selection.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && selection.text.utf16.count <= 800
+        selectionMessage == nil
     }
     private var trimmedQuestion: String { question.trimmingCharacters(in: .whitespacesAndNewlines) }
     private var canAsk: Bool { !trimmedQuestion.isEmpty && trimmedQuestion.utf16.count <= 600 && !isAsking }
@@ -63,13 +74,18 @@ struct SelectionInsightSheet: View {
                     heading
                     pronunciationButton
 
-                    dictionaryCard
+                    if let selectionMessage {
+                        Label(selectionMessage, systemImage: "text.alignleft")
+                            .foregroundStyle(Palette.secondary)
+                    } else if savedKind == "word" {
+                        dictionaryCard
+                    }
 
                     if let savedDefinition {
                         savedDefinitionCard(savedDefinition)
                     }
 
-                    if insight == nil { aiExplanationButton }
+                    if insight == nil, validSelection { aiExplanationButton }
 
                     if let lookupError {
                         Label(lookupError, systemImage: "exclamationmark.circle")
@@ -82,6 +98,20 @@ struct SelectionInsightSheet: View {
                     }
                 }
                 .padding(24)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+                .coordinateSpace(name: "wordDetailsContent")
+                .onPreferenceChange(QuestionFieldFrameKey.self) { questionFieldFrame = $0 }
+                .simultaneousGesture(
+                    SpatialTapGesture(coordinateSpace: .named("wordDetailsContent"))
+                        .onEnded { tap in
+                            // A simultaneous gesture leaves links and buttons active.
+                            // Taps inside the editor must keep its keyboard open.
+                            if questionFocused, !questionFieldFrame.contains(tap.location) {
+                                questionFocused = false
+                            }
+                        }
+                )
             }
             .scrollDismissesKeyboard(.interactively)
             .studyBackground()
@@ -90,6 +120,10 @@ struct SelectionInsightSheet: View {
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
+                }
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Done") { questionFocused = false }
                 }
             }
             .task(id: selection.id) { await loadSources() }
@@ -102,6 +136,7 @@ struct SelectionInsightSheet: View {
                 dictionaryTask = nil
                 saveTask?.cancel()
                 saveTask = nil
+                questionFocused = false
                 speech.stop()
             }
             .onChange(of: scenePhase) { _, phase in
@@ -181,6 +216,9 @@ struct SelectionInsightSheet: View {
                     Button("Try dictionary again") { retryDictionary() }
                         .buttonStyle(.bordered).controlSize(.small)
                 }
+                if let source = dictionaryFallbackURL {
+                    Link("Open in Wiktionary", destination: source).font(.footnote)
+                }
             }
             if isSavingSelection { ProgressView("Saving…") }
             if didAttemptSave, let notice = store.notice {
@@ -208,6 +246,21 @@ struct SelectionInsightSheet: View {
         case .unavailable, .none:
             return "Wiktionary is unavailable right now. You can still request an AI explanation."
         }
+    }
+
+    /// The fallback is constructed from a bounded lexical term, not a server URL.
+    /// It remains useful if the dictionary service fails while the public entry works.
+    private var dictionaryFallbackURL: URL? {
+        guard validSelection, let term = dictionaryTerm,
+              let language = ["it": "Italian", "es": "Spanish", "et": "Estonian",
+                              "ka": "Georgian", "ru": "Russian", "uk": "Ukrainian",
+                              "ja": "Japanese"][String(lesson.languageCode.lowercased().prefix(2))] else { return nil }
+        var components = URLComponents()
+        components.scheme = "https"
+        components.host = "en.wiktionary.org"
+        components.path = "/wiki/\(term)"
+        components.fragment = language
+        return components.url
     }
 
     private var aiExplanationButton: some View {
@@ -343,7 +396,20 @@ struct SelectionInsightSheet: View {
 
     private func followUp(_ insight: SelectionInsight) -> some View {
         VStack(alignment: .leading, spacing: 16) {
-            Eyebrow(text: "Ask about this")
+            HStack {
+                Eyebrow(text: "Ask about this")
+                Spacer()
+                if questionFocused {
+                    Button { questionFocused = false } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.title3)
+                            .frame(minWidth: 44, minHeight: 44)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Dismiss question keyboard")
+                    .accessibilityHint("Keeps your draft and word details open.")
+                }
+            }
             ForEach(Array(conversation.enumerated()), id: \.offset) { row in
                 VStack(alignment: .leading, spacing: 8) {
                     Text(row.element.question).font(.subheadline.weight(.semibold))
@@ -358,6 +424,12 @@ struct SelectionInsightSheet: View {
                 .focused($questionFocused)
                 .disabled(isAsking)
                 .accessibilityLabel("Question about this word or phrase")
+                .background {
+                    GeometryReader { geometry in
+                        Color.clear.preference(key: QuestionFieldFrameKey.self,
+                                               value: geometry.frame(in: .named("wordDetailsContent")))
+                    }
+                }
             if trimmedQuestion.utf16.count > 600 {
                 Text("Please shorten your question to 600 characters or fewer.")
                     .font(.footnote).foregroundStyle(Palette.secondary)
@@ -402,13 +474,18 @@ struct SelectionInsightSheet: View {
         dictionaryError = nil
         isLoadingDictionary = dictionaryTerm != nil
         guard validSelection else {
-            lookupError = "Select a shorter word or phrase, up to 800 characters, to get an explanation."
             isLoadingDictionary = false
             return
         }
-        // Opening details requests only the dictionary. Even cached AI explanations
-        // stay behind the explicit AI button, which reuses them on the server.
-        await loadDictionary(generation: generation)
+        guard !Task.isCancelled else { isLoadingDictionary = false; return }
+        if DefinitionSelection.shouldAutomaticallyExplain(selection.text, languageCode: lesson.languageCode) {
+            // A finished 2–14 word selection opens its contextual explanation once.
+            // Single words stay dictionary-first, with AI behind an explicit button.
+            isLoadingDictionary = false
+            generateInsight()
+        } else {
+            await loadDictionary(generation: generation)
+        }
     }
 
     private func retryDictionary() {
@@ -552,6 +629,14 @@ struct SelectionInsightSheet: View {
         askTask?.cancel()
         askTask = nil
         isAsking = false
+    }
+}
+
+private struct QuestionFieldFrameKey: PreferenceKey {
+    static let defaultValue: CGRect = .null
+
+    static func reduce(value: inout CGRect, nextValue: () -> CGRect) {
+        value = nextValue()
     }
 }
 

@@ -1,8 +1,25 @@
 # Validation record
 
-Updated on 2026-09-07. The development workspace runs Linux and has no Xcode or native iOS simulator. Historical build results and current source checks are separated below.
+Updated on 2026-09-08. The development workspace runs Linux and has no Xcode or native iOS simulator. Historical build results and current source checks are separated below.
 
-## Current pull gesture and dictionary-first details
+## Current automatic phrase selection, dictionary transport, and Ask dismissal
+
+- Removed the pull-to-open gesture. A 0.20-second hold permits phrase dragging in every direction. Only completed selections of 2–14 lexical words auto-open; more than 14 leaves a nearby reduce-selection message and does not request AI. Single words retain the nearby Word details button. Shared guards cover normal selection, VoiceOver, glossary links, and the Sentence details button.
+- Eligible phrase details start AI once from the stable selection task. Single words remain dictionary-first with optional AI. Dismissal cancels tasks and invalidates stale responses; completed server cache entries remain reusable. Dismissing and reopening during an unfinished request can still race cache completion.
+- Ask provides an X while editing, keyboard Done, and simultaneous outside-tap dismissal. The editor's frame is measured in the same named coordinate space as the tap, preserving taps inside the editor and allowing buttons to execute. Dismissal keeps the question draft and details sheet open.
+- The companion server replaces the experimental definition endpoint with Wiktionary's documented Action page API. It parses requested-language definition lists, excludes nested examples/navigation/other languages, and retains verified lemma links, attribution, bounded requests, and rate-limit cooldowns. Unavailable diagnostics contain only category, HTTP status, and elapsed time. Native failures now also offer a fixed-host Open in Wiktionary link.
+- Both mobile define and Ask endpoints enforce the 14-word selection limit before provider calls. Website requests retain their existing limits and model.
+
+Completed checks:
+
+- Nineteen focused server tests pass, covering page HTML parsing, attribution and lemma restrictions, unavailable/not-found distinctions, provider cooldowns, mobile 14/15-word limits, Japanese and Georgian counts, cache reuse, and website profile preservation.
+- Live new-adapter lookups returned Estonian olen plus olema in 5.8 seconds and Georgian გამარჯობა in 5.5 seconds. Actual page-response fixtures for these terms and Italian ciao parsed with the expected language and senses. This is local adapter verification, not proof that the user's production dictionary failure is resolved.
+- All 44 Swift files grammar-parse. The suite now contains 88 XCTest methods; obsolete pull tests were replaced with any-direction selection and word-count boundary tests. No native compiler or XCTest execution is available in this workspace.
+- Independent reviews found no blocking selection, keyboard-coordinate, or dictionary parser issue. Whitespace checks pass. The server production build passed, and the existing unrelated Cloudflare/reader TypeScript diagnostics remain, with none in changed files.
+
+Next device checks: release 2, 14, and 15 words; continue downward through lines; tap single-word details and try the dictionary; confirm no requests while dragging or after a 15-word release; try X, keyboard Done, and outside taps while retaining an Ask draft. Codemagic must compile and execute XCTest before TestFlight installation. Recheck the production dictionary and inspect the new failure categories if it remains unavailable.
+
+## Previous pull gesture and dictionary-first details
 
 - Replaced the bottom Explain bar with a 44-point control positioned beside a visible selected line. A new downward touch on the completed highlight or its control shows continuous distance progress. Release after 56 points opens details; pulling back before release cancels. There is no velocity requirement or maximum hold duration. A tap on the nearby control and native VoiceOver Study selection actions also open details.
 - New-word phrase dragging keeps its 0.20-second hold, joined highlights, and word-crossing haptics. The reader's scroll recognizer retains priority outside recognized selection interactions. The video sentence-study view uses the same pull gesture and maps its selection into the original document. The 0.45-second playback hold is unchanged.

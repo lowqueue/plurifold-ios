@@ -1,15 +1,13 @@
 import SwiftUI
 import UIKit
 
-/// A compact cue anchored to highlighted words. The text view's recognizer owns
-/// the pull, sharing the same distance-based rules for the cue and selected text.
+/// A nearby details button for one word, or a clear limit notice for a long
+/// selection. Phrases open automatically after the selection gesture finishes.
 @MainActor
 final class ReaderSelectionBar: UIView {
     var onOpen: (() -> Void)?
     private let label = UILabel()
-    private let arrow = UIImageView(image: UIImage(systemName: "arrow.down"))
-    private let progressTrack = UIView()
-    private var progress: CGFloat = 0
+    private let icon = UIImageView(image: UIImage(systemName: "text.magnifyingglass"))
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -21,40 +19,36 @@ final class ReaderSelectionBar: UIView {
         layer.shadowOffset = CGSize(width: 0, height: 2)
         label.font = .preferredFont(forTextStyle: .caption1)
         label.adjustsFontForContentSizeCategory = true
-        label.numberOfLines = 1
+        label.numberOfLines = 2
         label.adjustsFontSizeToFitWidth = true
         label.minimumScaleFactor = 0.7
         label.textColor = UIColor(Palette.accentInk)
-        arrow.tintColor = UIColor(Palette.accentInk)
-        arrow.contentMode = .scaleAspectFit
-        progressTrack.backgroundColor = UIColor(Palette.warm)
-        progressTrack.layer.cornerRadius = 1.5
-        [arrow, label, progressTrack].forEach(addSubview)
+        icon.tintColor = UIColor(Palette.accentInk)
+        icon.contentMode = .scaleAspectFit
+        [icon, label].forEach(addSubview)
         isAccessibilityElement = true
         accessibilityTraits = .button
         accessibilityLabel = "Open word details"
         accessibilityHint = "Shows dictionary meanings. AI explanations are optional."
-        update(progress: 0, canOpen: true)
+        update(notice: nil)
     }
 
     required init?(coder: NSCoder) { fatalError("Use init(frame:)") }
 
-    func update(progress: CGFloat, canOpen: Bool) {
-        self.progress = min(1, max(0, progress))
-        label.text = !canOpen ? "Select a shorter phrase" : progress >= 1 ? "Release for details" : "Pull down for details"
-        arrow.image = UIImage(systemName: progress >= 1 ? "checkmark" : "arrow.down")
-        alpha = canOpen ? 1 : 0.8
+    func update(notice: String?) {
+        label.text = notice ?? "Word details"
+        icon.image = UIImage(systemName: notice == nil ? "text.magnifyingglass" : "text.badge.minus")
         layer.borderColor = UIColor(Palette.line).cgColor
-        accessibilityTraits = canOpen ? .button : [.button, .notEnabled]
+        accessibilityTraits = notice == nil ? .button : [.staticText, .notEnabled]
+        accessibilityLabel = notice ?? "Open word details"
+        accessibilityHint = notice == nil ? "Shows dictionary meanings. AI explanations are optional." : nil
         setNeedsLayout()
     }
 
     override func layoutSubviews() {
         super.layoutSubviews()
-        arrow.frame = CGRect(x: 12, y: 11, width: 18, height: bounds.height - 22)
+        icon.frame = CGRect(x: 12, y: 11, width: 18, height: bounds.height - 22)
         label.frame = CGRect(x: 38, y: 5, width: max(0, bounds.width - 50), height: bounds.height - 10)
-        progressTrack.frame = CGRect(x: 12, y: bounds.height - 5,
-                                     width: max(0, bounds.width - 24) * progress, height: 3)
     }
 
     override func accessibilityActivate() -> Bool {

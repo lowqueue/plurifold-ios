@@ -19,6 +19,7 @@ struct LiveReaderView: View {
     @State private var readingPosition = 0
     @State private var scrollRequest: ReaderScrollRequest?
     @State private var saveError: String?
+    @State private var selectionNotice: String?
 
     var body: some View {
         ZStack {
@@ -69,6 +70,14 @@ struct LiveReaderView: View {
             Button("OK", role: .cancel) { saveError = nil }
         } message: {
             Text(saveError ?? "")
+        }
+        .alert("Choose a shorter selection", isPresented: Binding(
+            get: { selectionNotice != nil },
+            set: { if !$0 { selectionNotice = nil } }
+        )) {
+            Button("OK", role: .cancel) { selectionNotice = nil }
+        } message: {
+            Text(selectionNotice ?? "")
         }
         .onDisappear { pausePlayback() }
         .onChange(of: scenePhase) { _, phase in
@@ -139,7 +148,7 @@ struct LiveReaderView: View {
                 Text(channel).font(.subheadline).foregroundStyle(Palette.secondary)
             }
             if !document.text.isEmpty {
-                Text("Tap a word, or hold briefly and drag across a phrase. Then pull down on the highlight for details. Tap elsewhere to clear.")
+                Text("Tap a word for dictionary details. Hold briefly and drag in any direction; release 2–14 words for an AI explanation. Tap elsewhere to clear.")
                     .font(.footnote).foregroundStyle(Palette.secondary)
                 if store.positions[lesson.id] != nil {
                     Button("Resume reading", systemImage: "bookmark.fill") { resume(lesson) }
@@ -294,6 +303,16 @@ struct LiveReaderView: View {
     }
 
     private func openSelection(_ selected: PassageSelection) {
+        guard let lesson else { return }
+        if DefinitionSelection.exceedsExplanationWordLimit(selected.text, languageCode: lesson.languageCode) {
+            selectionNotice = DefinitionSelection.wordLimitMessage
+            return
+        }
+        guard selected.range.length <= 800 else {
+            selectionNotice = "Select a shorter phrase for a focused explanation."
+            return
+        }
+        guard DefinitionSelection.wordCount(in: selected.text, languageCode: lesson.languageCode) > 0 else { return }
         pausePlayback()
         selection = selected
     }

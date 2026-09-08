@@ -10,6 +10,7 @@ struct SentenceStudySheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var explanation: PassageSelection?
     @State private var clearSelectionRequest = UUID()
+    @State private var selectionNotice: String?
 
     var body: some View {
         NavigationStack {
@@ -25,17 +26,24 @@ struct SentenceStudySheet: View {
                             clearSelectionRequest: clearSelectionRequest,
                             languageCode: lesson.languageCode,
                             onOpenSelection: { selected in
-                                explanation = document.selection(in: sentence, localRange: selected.range)
+                                if let contextual = document.selection(in: sentence, localRange: selected.range) {
+                                    openSelection(contextual)
+                                }
                             }
                         )
                         .readingPanel(onBackgroundTap: clearSelection)
-                        Text("Tap a word, or hold briefly and drag across a phrase. Then pull down on the highlight for details. Tap elsewhere to clear.")
+                        Text("Tap a word for dictionary details. Hold briefly and drag in any direction; release 2–14 words for an AI explanation. Tap elsewhere to clear.")
                             .font(.footnote).foregroundStyle(Palette.secondary)
                         Button("Sentence details", systemImage: "text.magnifyingglass") {
-                            explanation = PassageSelection(context: document.text, range: sentence.range)
+                            if let selected = PassageSelection(context: document.text, range: sentence.range) {
+                                openSelection(selected)
+                            }
                         }
                         .buttonStyle(.bordered)
-                        .disabled(sentence.range.length > 800)
+                        if let selectionNotice {
+                            Text(selectionNotice).font(.footnote).foregroundStyle(Palette.secondary)
+                                .accessibilityLabel(selectionNotice)
+                        }
                         Spacer(minLength: 48)
                     }
                     .padding(24)
@@ -66,5 +74,20 @@ struct SentenceStudySheet: View {
 
     private func clearSelection() {
         clearSelectionRequest = UUID()
+        selectionNotice = nil
+    }
+
+    private func openSelection(_ selected: PassageSelection) {
+        if DefinitionSelection.exceedsExplanationWordLimit(selected.text, languageCode: lesson.languageCode) {
+            selectionNotice = DefinitionSelection.wordLimitMessage
+            return
+        }
+        guard selected.range.length <= 800 else {
+            selectionNotice = "Select a shorter phrase for a focused explanation."
+            return
+        }
+        guard DefinitionSelection.wordCount(in: selected.text, languageCode: lesson.languageCode) > 0 else { return }
+        selectionNotice = nil
+        explanation = selected
     }
 }

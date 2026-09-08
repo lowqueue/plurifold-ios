@@ -4,7 +4,7 @@ Use the existing GitHub repository, Codemagic application, and TestFlight group.
 
 ## Start the build
 
-1. Open [lowqueue/plurifold-ios](https://github.com/lowqueue/plurifold-ios) and confirm branch **main** shows **Open dictionary details with a nearby pull gesture**.
+1. Open [lowqueue/plurifold-ios](https://github.com/lowqueue/plurifold-ios) and confirm branch **main** shows **Explain short selections automatically and simplify Ask**.
 2. Open **plurifold-ios** in Codemagic. Select **main** and refresh the configuration if needed.
 3. Choose **Start new build → Plurifold - TestFlight**.
 4. Confirm the build overview shows the latest GitHub commit. Rebuilding an older commit will not include this update.
@@ -17,12 +17,12 @@ After Apple's processing completes, assign the build to your existing internal t
 
 - Hold a player transcript sentence for about **0.45 seconds**. Its original sentence should stay fixed while the player pauses and the study sheet opens.
 - Hold a word for **0.2 seconds**, then drag. Neighbouring selected words should join into one blue shape per line, with a small bubble response and one haptic tick as you cross words. Check reversing, multiline dragging, clear, normal scrolling, and Reduce Motion.
-- Lift your finger after selecting, then pull down from the highlight or the nearby details control. Try a very slow pull, pulling back before completion, a quick pull, and tapping the control. It should open dictionary details without requesting AI. Repeat in Study sentence. The bottom Explain button is gone.
+- Highlight **2 words**, then **14 words**, and release. Each should open AI automatically. Select **15 words** or a paragraph: the app should show the short-selection message without requesting AI. Downward dragging should extend the highlight freely. Repeat in Study sentence. One word still offers a nearby Word details button.
 - Choose **Italian** on Home. Words and Review should show only Italian. Switch languages and check both tabs again. Review offers **Reveal meaning**, **Again**, and **Got it** for a session round.
 - Save a meaning on desktop, return to the app, and open that term. Check **Your saved definition** and its original context.
-- Complete a desktop AI lookup without saving it. Open the same selection in the same passage on mobile. AI should remain hidden until you press **Explain with AI**, then check **Earlier AI explanation from your account**. A different context should require its own AI explanation.
+- Complete a desktop phrase lookup without saving it. Select the same phrase in the same passage on mobile and check **Earlier AI explanation from your account**. For a single word, AI remains behind Explain with AI. Different contexts require their own explanation.
 - Try Estonian **olen**, **lapsed**, Georgian **გამარჯობა**, or **ია**. Inspect Dictionary and the linked source, then save one meaning. Attribution should remain visible in Words/Review and on desktop. Some forms, such as **ბავშვებო**, have no entry; a missing entry must be distinct from a temporary connection failure.
-- Use **Explain with AI** for a word, phrase, or sentence, then ask a follow-up. The website retains its current model and mobile uses the compact profile. The bottom **From this lesson** panel should be absent.
+- Type a follow-up in Ask. Use the X, keyboard Done, and a tap outside the editor to dismiss the keyboard without closing details or losing the draft. Ask and Save should still respond. The From this lesson panel remains absent.
 
 The matching server update includes `/api/mobile/dictionary` and read-only reuse of earlier explanations through `/api/define`. New mobile AI generation still uses `mobile-lite`; dictionary lookup and saved meanings do not require generating AI. No API keys belong in the iOS repository.
 

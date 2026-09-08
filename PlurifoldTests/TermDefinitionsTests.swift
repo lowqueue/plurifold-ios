@@ -2,6 +2,41 @@ import XCTest
 @testable import Plurifold
 
 final class TermDefinitionsTests: XCTestCase {
+    func testAutomaticExplanationsStartAtTwoWordsAndStopAfterFourteen() {
+        for count in [1, 2, 14, 15] {
+            let text = Array(repeating: "olen", count: count).joined(separator: " ")
+            XCTAssertEqual(DefinitionSelection.wordCount(in: text, languageCode: "et-EE"), count)
+            XCTAssertEqual(DefinitionSelection.shouldAutomaticallyExplain(text, languageCode: "et-EE"),
+                           (2...14).contains(count))
+            XCTAssertEqual(DefinitionSelection.exceedsExplanationWordLimit(text, languageCode: "et-EE"),
+                           count > 14)
+        }
+    }
+
+    func testPunctuationAndEmojiDoNotSpendTheLexicalWordLimit() {
+        let text = " ‘cafe\u{301}’ 👩🏽‍💻,\n mondo! 🇮🇹 "
+        XCTAssertEqual(DefinitionSelection.wordCount(in: text, languageCode: "it-IT"), 2)
+        XCTAssertTrue(DefinitionSelection.shouldAutomaticallyExplain(text, languageCode: "it-IT"))
+        for empty in ["", " \n", "!!! 🇪🇪 👩🏽‍💻"] {
+            XCTAssertEqual(DefinitionSelection.wordCount(in: empty, languageCode: "et-EE"), 0)
+            XCTAssertFalse(DefinitionSelection.shouldAutomaticallyExplain(empty, languageCode: "et-EE"))
+        }
+    }
+
+    func testGeorgianWhitespaceAndUnspacedJapaneseBothEnforceTheWordLimit() {
+        XCTAssertEqual(DefinitionSelection.wordCount(in: "მე\nვარ", languageCode: "ka-GE"), 2)
+        let georgianParagraph = Array(repeating: "გამარჯობა", count: 100).joined(separator: "\u{00A0}")
+        XCTAssertEqual(DefinitionSelection.wordCount(in: georgianParagraph, languageCode: "ka-GE"), 15)
+        XCTAssertFalse(DefinitionSelection.shouldAutomaticallyExplain(georgianParagraph, languageCode: "ka-GE"))
+        XCTAssertTrue(DefinitionSelection.exceedsExplanationWordLimit(georgianParagraph, languageCode: "ka-GE"))
+        XCTAssertGreaterThan(DefinitionSelection.wordCount(in: "猫がいる", languageCode: "ja-JP"), 1)
+        XCTAssertTrue(DefinitionSelection.shouldAutomaticallyExplain("猫がいる", languageCode: "ja-JP"))
+        let japaneseParagraph = String(repeating: "猫がいる。", count: 15)
+        XCTAssertEqual(DefinitionSelection.wordCount(in: japaneseParagraph, languageCode: "ja-JP"), 15)
+        XCTAssertTrue(DefinitionSelection.exceedsExplanationWordLimit(japaneseParagraph, languageCode: "ja-JP"))
+        XCTAssertFalse(DefinitionSelection.shouldAutomaticallyExplain(japaneseParagraph, languageCode: "ja-JP"))
+    }
+
     func testDictionaryUsesIndividualEstonianAndGeorgianFormsWithoutSurroundingPunctuation() {
         XCTAssertEqual(DefinitionSelection.dictionaryTerm(for: " “Tere!” ", languageCode: "et-EE"), "Tere")
         XCTAssertEqual(DefinitionSelection.dictionaryTerm(for: "გამარჯობა,", languageCode: "ka-GE"), "გამარჯობა")

@@ -2,14 +2,22 @@ import Foundation
 import NaturalLanguage
 
 enum DefinitionSelection {
+    static let maximumWordCount = 14
+    static let wordLimitMessage = "Select 14 words or fewer for a focused explanation."
+
+    static func shouldAutomaticallyExplain(_ text: String, languageCode: String) -> Bool {
+        (2...maximumWordCount).contains(wordCount(in: text, languageCode: languageCode))
+    }
+
+    static func exceedsExplanationWordLimit(_ text: String, languageCode: String) -> Bool {
+        wordCount(in: text, languageCode: languageCode) > maximumWordCount
+    }
+
     /// Keep saved-word classification independent of dictionary lookup. Tokenization
     /// helps with unspaced scripts; unsupported tokenizers still need to recognize
     /// an ordinary phrase containing separate words.
     static func kind(for text: String, languageCode: String) -> String {
-        let separatedWords = text.components(separatedBy: .whitespacesAndNewlines).filter {
-            $0.unicodeScalars.contains { CharacterSet.alphanumerics.contains($0) }
-        }.count
-        return max(separatedWords, wordCount(in: text, languageCode: languageCode)) > 1 ? "phrase" : "word"
+        wordCount(in: text, languageCode: languageCode) > 1 ? "phrase" : "word"
     }
 
     /// A trailing comma or sentence punctuation should not prevent lookup of an
@@ -28,18 +36,28 @@ enum DefinitionSelection {
         return trimmed
     }
 
-    private static func wordCount(in text: String, languageCode: String) -> Int {
+    /// Count lexical words, including unspaced scripts. Only counts through the
+    /// first disallowed word are needed, so a whole transcript cannot make this
+    /// selection check grow with the entire tokenized document.
+    static func wordCount(in text: String, languageCode: String) -> Int {
+        let countLimit = maximumWordCount + 1
+        let separatedWords = text.split(whereSeparator: \.isWhitespace).lazy.filter {
+            $0.unicodeScalars.contains { CharacterSet.alphanumerics.contains($0) }
+        }.prefix(countLimit).count
+        if separatedWords == countLimit { return countLimit }
         let tokenizer = NLTokenizer(unit: .word)
         tokenizer.string = text
-        tokenizer.setLanguage(NLLanguage(rawValue: String(languageCode.lowercased().prefix(2))))
+        if let language = PassageTextSelection.tokenizerLanguageCode(languageCode) {
+            tokenizer.setLanguage(NLLanguage(rawValue: language))
+        }
         var words = 0
         tokenizer.enumerateTokens(in: text.startIndex..<text.endIndex) { range, _ in
             if text[range].unicodeScalars.contains(where: { CharacterSet.alphanumerics.contains($0) }) {
                 words += 1
             }
-            return words < 2
+            return words < countLimit
         }
-        return words
+        return max(separatedWords, words)
     }
 }
 
