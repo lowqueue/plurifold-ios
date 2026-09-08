@@ -43,6 +43,7 @@ struct MobileLesson: Codable, Identifiable, Hashable {
     let media: [MobileMedia]
     let resources: [MobileResource]
     let vocabulary: [MobileGlossary]
+    var courseContent: MobileCourseContent? = nil
 }
 
 struct MobileParagraph: Codable, Identifiable, Hashable {

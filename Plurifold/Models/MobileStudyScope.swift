@@ -37,6 +37,19 @@ final class MobileStudyScope: ObservableObject {
         tab = .home
     }
 
+    /// Previous/next stays inside the current course instead of stacking readers.
+    func openCourseActivity(_ id: String, in course: MobileCourse) {
+        guard let language,
+              MobileLanguageKey.normalized(language.code) == MobileLanguageKey.normalized(course.languageCode),
+              course.lessons.contains(where: { $0.id == id && $0.kind == "course" }),
+              let courseIndex = homePath.lastIndex(where: {
+                  if case .course(let courseID, _) = $0 { return courseID == course.id }
+                  return false
+              }) else { return }
+        homePath = Array(homePath.prefix(courseIndex + 1)) + [.lesson(id: id)]
+        tab = .home
+    }
+
     func reconcile(languages: [MobileLanguageOption]) {
         guard let language else { return }
         let key = MobileLanguageKey.normalized(language.code)

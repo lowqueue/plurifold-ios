@@ -4,7 +4,7 @@ Use the existing GitHub repository, Codemagic application, and TestFlight group.
 
 ## Start the build
 
-1. Open [lowqueue/plurifold-ios](https://github.com/lowqueue/plurifold-ios) and confirm branch **main** shows **Match the header to the website's blinking wordmark**.
+1. Open [lowqueue/plurifold-ios](https://github.com/lowqueue/plurifold-ios) and confirm branch **main** shows **Restore structured course activities and clean up iPhone navigation**.
 2. Open **plurifold-ios** in Codemagic. Select **main** and refresh the configuration if needed.
 3. Choose **Start new build → Plurifold - TestFlight**.
 4. Confirm the build overview shows the latest GitHub commit. Rebuilding an older commit will not include this update.
@@ -14,6 +14,12 @@ Codemagic regenerates the Xcode project, runs the native test suite on its Mac, 
 After Apple's processing completes, assign the build to your existing internal testing group if needed. Open **TestFlight → Plurifold → Update** on your iPhone.
 
 ## Check this revision
+
+- Open Georgian → GeoFL A1 → Point and identify, then Match words to objects. The activity should show the original worksheet and instructions, with audio available above it. Enlarge the source and use Done to close it.
+- Use Previous and Next, then Back to course. Each activity should start at its top, the outline should retain its place, and chapter changes must not accumulate a stack of readers or move the tab bar.
+- Open Estonian and Japanese courses. Page controls should show one source image at a time; patterns and supplied meanings remain readable in the chosen colorway. Test larger text and a failed image connection.
+- Try a Georgian fill-in or choice exercise and an Estonian question. Blank answers are skipped; editing clears that answer's result; Reveal and Clear remain separate. These checks use the authored answer keys locally. Exercise drafts and results are local to the current activity; this update does not sync course completion or replace the website's handwriting and word-search tools.
+- Open Transcript and word study for the existing dictionary and short-phrase AI selection. Show supplied meanings, open Words and expressions, and check audio stops when dismissing the player.
 
 - From Home, open each available language. Open a standalone lesson and a nested course chapter, then go back. Use the header to switch language while inside a reader, return Home, and select the same language again. The stack should change destinations without replacing its navigation host. The reported crash has no attached native crash log, so its resolution still needs this device check.
 - Confirm the top-left header shows the full lowercase `plurifold` wordmark with one narrow block cursor immediately after the final letter, matching the website. The cursor should blink every 1.1 seconds, remain visible with Reduce Motion, and resume after backgrounding. Check all colorways and larger text; the wordmark must not shift as the cursor blinks.

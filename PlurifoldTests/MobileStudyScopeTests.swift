@@ -101,6 +101,42 @@ final class MobileStudyScopeTests: XCTestCase {
         XCTAssertEqual(list.languages.last?.lessonCount, 1)
     }
 
+    func testCoursePreviousAndNextReplaceReaderAndKeepOutline() {
+        let scope = MobileStudyScope()
+        let italian = language("it-IT", "Italian")
+        let course = activityCourse()
+        scope.selectLanguage(italian)
+        scope.homePath.append(.course(id: course.id, search: ""))
+        scope.homePath.append(.lesson(id: "first"))
+        scope.openCourseActivity("second", in: course)
+        XCTAssertEqual(scope.homePath, [.library(italian), .course(id: course.id, search: ""), .lesson(id: "second")])
+        scope.openCourseActivity("first", in: course)
+        XCTAssertEqual(scope.homePath.count, 3)
+        XCTAssertEqual(scope.homePath.last, .lesson(id: "first"))
+    }
+
+    func testCourseNavigationRejectsUnknownChapterAndStaleLanguage() {
+        let scope = MobileStudyScope()
+        let course = activityCourse()
+        scope.selectLanguage(language("it-IT", "Italian"))
+        scope.homePath.append(.course(id: course.id, search: ""))
+        let path = scope.homePath
+        scope.openCourseActivity("unknown", in: course)
+        XCTAssertEqual(scope.homePath, path)
+        scope.selectLanguage(language("et-EE", "Estonian"))
+        let changedLanguagePath = scope.homePath
+        scope.openCourseActivity("first", in: course)
+        XCTAssertEqual(scope.homePath, changedLanguagePath)
+    }
+
+    private func activityCourse() -> MobileCourse {
+        MobileCourse(id: "course", title: "Course", languageCode: "it-IT", languageName: "Italian",
+                     lessons: ["first", "second"].map { id in
+            MobileLessonSummary(id: id, title: id, subtitle: "", languageCode: "it-IT", languageName: "Italian",
+                                dialect: nil, paragraphCount: 1, kind: "course", channel: nil)
+        })
+    }
+
     private func language(_ code: String, _ name: String) -> MobileLanguageOption {
         MobileLanguageOption(code: code, name: name, courseCount: 0, lessonCount: 1)
     }

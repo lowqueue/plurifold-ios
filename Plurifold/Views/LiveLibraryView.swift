@@ -44,7 +44,7 @@ struct LiveLibraryView: View {
                     if !shelf.courseFolders.isEmpty {
                         sectionHeading("Courses", subtitle: "Foundations and guided study")
                         ForEach(shelf.courseFolders) { folder in
-                            NavigationLink(value: MobileStudyRoute.course(id: folder.id, search: search)) {
+                            NavigationLink(value: MobileStudyRoute.course(id: folder.id, search: "")) {
                                 courseRow(folder)
                             }
                             .buttonStyle(.plain)

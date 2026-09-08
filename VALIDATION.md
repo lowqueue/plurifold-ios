@@ -2,6 +2,16 @@
 
 Updated on 2026-09-08. The development workspace runs Linux and has no Xcode or native iOS simulator. Historical build results and current source checks are separated below.
 
+## Native course activities and outline
+
+The supplied recording shows oversized catalogue cards reused for course chapters, an extra native navigation/search bar, and generic transcript readers where the website uses structured exercises. The old API also treated GeoFL image paths as paragraph text for activities without an audio transcript. The recording supports layout/reflow problems, not a newly attributed native crash.
+
+- Course outlines now use numbered compact rows and inline search. Chapter activities have a dedicated scroll container that exists before and after loading, a fixed inline back/previous/next strip, and independent content identity per lesson. Previous/next replaces the current chapter rather than stacking readers, and rejects invalid or stale-language requests.
+- The detail API reuses the four authored course sources for worksheets, original instructions, example/pattern sections, and answer keys. All 75 activities have detail metadata. Source image addresses are excluded from reading text; rich content is excluded from the catalogue summaries. The normal lesson reader and API remain compatible.
+- Worksheets display one at a time with an enlarge/zoom sheet and explicit Done. Native practice uses existing keys, skips blank items, and clears feedback when editing. Dictionary/AI selection remains available in word-study and vocabulary sections. Exercise state is local to this activity; handwriting, the interactive word-search, and course-completion syncing remain website features.
+- Eleven focused server integration checks pass, including source-image separation, all question kinds and accepted answers, compact summaries, and existing account-study preservation. The production server build passed. A TypeScript check found no diagnostics in the changed mobile-content modules; nine diagnostics remain elsewhere in the existing project.
+- All 54 Swift files grammar-parse. The regenerated project validates 140 object references with 41 app sources, 13 test sources, and three resources. The suite contains 110 XCTest methods, including optional-payload compatibility, Unicode/answer matching, and chapter-route replacement. These methods have not run locally. Native compilation, XCTest execution, image rendering, and transition behavior require Codemagic and the next iPhone build.
+
 ## Header wordmark correction
 
 The user clarified that the intended header is the full lowercase `plurifold` wordmark and trailing block cursor shown on the website. Replaced the geometric p mark in the masthead with the native wordmark. Its regular monospaced lettering, tracking, cursor proportions, baseline offset, and 1.1-second step blink follow the website's `terminal-wordmark` and `terminal-cursor` styles. Cursor space remains reserved while hidden; Reduce Motion and inactive scenes keep it visible. The existing app icon assets and navigation behavior are unchanged.

@@ -66,7 +66,7 @@ struct LiveHomeView: View {
                 .frame(maxWidth: .infinity)
             }
             .studyBackground()
-            .toolbar(studyScope.homePath.isEmpty ? .hidden : .visible, for: .navigationBar)
+            .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(for: MobileStudyRoute.self) { route in
                 switch route {
                 case .library(let code, let name):
@@ -74,7 +74,14 @@ struct LiveHomeView: View {
                 case .course(let id, let search):
                     LiveCourseView(courseID: id, initialSearch: search)
                 case .lesson(let id):
-                    LiveReaderView(lessonID: id)
+                    if let course = store.courses.first(where: { course in
+                        course.lessons.contains { $0.id == id && $0.kind == "course" }
+                    }) {
+                        CourseActivityView(courseID: course.id, lessonID: id)
+                            .id(id)
+                    } else {
+                        LiveReaderView(lessonID: id)
+                    }
                 }
             }
             .refreshable { await store.refresh() }

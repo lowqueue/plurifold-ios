@@ -2,7 +2,7 @@
 
 A native SwiftUI app for the same Plurifold account, lessons, and saved vocabulary you use on the website. Requires iOS 17 or later on iPhone or iPad.
 
-The live app has reached an iPhone through TestFlight. The masthead now shows the website's full lowercase `plurifold` wordmark with a narrow trailing block cursor and its 1.1-second blink. One stable navigation stack owns library, course, and lesson destinations, and library cards load lazily following the reported navigation crash. The website-style layout, colorways, native reading and playback, automatic phrase explanations, dictionary details, Words, and Review remain available. Run Codemagic to compile and test this revision before installing it.
+The live app has reached an iPhone through TestFlight. Courses now open a compact chapter outline and a dedicated activity workspace with the website's source images, instructions, language patterns, audio, and authored practice questions. Chapter navigation keeps one stable scroll container and opens each activity at the top. The lowercase blinking wordmark, colorways, dictionary/AI word study, Words, and Review remain available. Run Codemagic to compile and test this revision before installing it.
 
 ## Install this update from Windows
 
