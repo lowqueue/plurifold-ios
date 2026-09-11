@@ -4,6 +4,86 @@ import XCTest
 
 @MainActor
 final class NativeSessionTests: XCTestCase {
+    func testSignUpConfirmationNeverCreatesASessionFromAUserObject() async {
+        let storage = MemoryCredentials()
+        let transport = StubAuthTransport()
+        let session = NativeSession(transport: transport, storage: storage)
+        await session.signUp(email: "  new@example.com  ", password: "never-store-this-password")
+        XCTAssertNil(session.user)
+        XCTAssertNil(storage.data)
+        XCTAssertNil(session.errorMessage)
+        XCTAssertNotNil(session.noticeMessage)
+        XCTAssertFalse(session.isBusy)
+        XCTAssertFalse(session.isRestoring)
+        XCTAssertEqual(transport.signUpEmail, "new@example.com")
+        XCTAssertEqual(transport.signUpRedirect, NativeSession.baseURL.absoluteString)
+        session.clearAccountMessages()
+        XCTAssertNil(session.noticeMessage)
+    }
+
+    func testSignUpWithImmediateSessionUsesTheSameSecureStorage() async {
+        let storage = MemoryCredentials()
+        let transport = StubAuthTransport()
+        transport.signUpBody = ["access_token": "signup-access", "refresh_token": "signup-refresh", "expires_in": 3600,
+                                "user": ["id": "reader-2", "email": "new@example.com"]]
+        let session = NativeSession(transport: transport, storage: storage)
+        await session.signUp(email: "new@example.com", password: "never-store-this-password")
+        XCTAssertEqual(session.user?.id, "reader-2")
+        XCTAssertNotNil(storage.data)
+        XCTAssertNil(session.noticeMessage)
+        XCTAssertNil(session.errorMessage)
+        XCTAssertFalse(String(data: storage.data ?? Data(), encoding: .utf8)?.contains("never-store-this-password") ?? true)
+    }
+
+    func testIncompleteSignUpTokensAreAnErrorInsteadOfAConfirmationNotice() async {
+        let storage = MemoryCredentials()
+        let transport = StubAuthTransport()
+        transport.signUpBody = ["access_token": "incomplete", "user": ["id": "reader-2", "email": "new@example.com"]]
+        let session = NativeSession(transport: transport, storage: storage)
+        await session.signUp(email: "new@example.com", password: "password")
+        XCTAssertNil(session.user)
+        XCTAssertNil(storage.data)
+        XCTAssertNil(session.noticeMessage)
+        XCTAssertNotNil(session.errorMessage)
+    }
+
+    func testSignupValidationAndUntrustedConfigurationDoNotSendCredentials() async {
+        let transport = StubAuthTransport()
+        let session = NativeSession(transport: transport, storage: MemoryCredentials())
+        await session.signUp(email: "reader@example.com", password: "short")
+        XCTAssertEqual(transport.signUpRequests, 0)
+        XCTAssertNotNil(session.errorMessage)
+        transport.configURL = "https://attacker.example/supabase.co"
+        await session.signUp(email: "reader@example.com", password: "password")
+        XCTAssertEqual(transport.signUpRequests, 0)
+        XCTAssertNil(session.user)
+    }
+
+    func testSignOutDuringSignupDiscardsItsDelayedSession() async {
+        let storage = MemoryCredentials()
+        let transport = StubAuthTransport()
+        transport.signUpBody = ["access_token": "signup-access", "refresh_token": "signup-refresh", "expires_in": 3600,
+                                "user": ["id": "reader-2", "email": "new@example.com"]]
+        let session = NativeSession(transport: transport, storage: storage)
+        let started = expectation(description: "Signup started")
+        var resume: CheckedContinuation<Void, Never>?
+        transport.beforeSignUp = {
+            await withCheckedContinuation { continuation in
+                resume = continuation
+                started.fulfill()
+            }
+        }
+        let pending = Task { await session.signUp(email: "new@example.com", password: "password") }
+        await fulfillment(of: [started], timeout: 2)
+        await session.signOut()
+        resume?.resume()
+        await pending.value
+        XCTAssertNil(session.user)
+        XCTAssertNil(storage.data)
+        XCTAssertNil(session.noticeMessage)
+        XCTAssertFalse(session.isBusy)
+    }
+
     func testSavedSignInIsVerifiedAndSurvivesTemporaryConnectionFailure() async {
         let storage = MemoryCredentials()
         let transport = StubAuthTransport()
@@ -195,6 +275,11 @@ private final class StubAuthTransport: NativeAuthTransporting {
     var rejectUser = false
     var refreshServerUnavailable = false
     var passwordRequests = 0
+    var signUpRequests = 0
+    var signUpEmail: String?
+    var signUpRedirect: String?
+    var signUpBody: [String: Any] = ["id": "reader-2", "email": "new@example.com"]
+    var beforeSignUp: (() async -> Void)?
     var refreshRequests = 0
     var userRequests = 0
     var logoutScope: String?
@@ -211,6 +296,17 @@ private final class StubAuthTransport: NativeAuthTransporting {
         case "/api/mobile/config":
             XCTAssertNil(request.value(forHTTPHeaderField: "Authorization"))
             body = ["supabase": ["url": configURL, "publishableKey": "sb_publishable_test_public_key"]]
+        case "/auth/v1/signup":
+            signUpRequests += 1
+            XCTAssertEqual(request.httpMethod, "POST")
+            XCTAssertEqual(url.host, "plurifold-test.supabase.co")
+            XCTAssertNil(request.value(forHTTPHeaderField: "Authorization"))
+            XCTAssertNotNil(request.value(forHTTPHeaderField: "apikey"))
+            let requestBody = try JSONSerialization.jsonObject(with: XCTUnwrap(request.httpBody)) as? [String: String]
+            signUpEmail = requestBody?["email"]
+            signUpRedirect = query["redirect_to"]
+            await beforeSignUp?()
+            body = signUpBody
         case "/auth/v1/token" where query["grant_type"] == "password":
             passwordRequests += 1
             await beforePassword?()

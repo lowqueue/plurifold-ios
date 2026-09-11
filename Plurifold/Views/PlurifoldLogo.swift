@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// Native rendering of the website's terminal wordmark and trailing block cursor.
+/// Garden uses the website's clean wordmark with a palette-colored block.
+/// Original retains the compact terminal typography and blinking cursor.
 struct PlurifoldLogo: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
@@ -12,10 +13,12 @@ struct PlurifoldLogo: View {
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: wordmarkSize * 0.2) {
             Text("plurifold")
-                .font(.system(size: wordmarkSize, weight: .regular, design: .monospaced))
-                .tracking(wordmarkSize * -0.07)
+                .font(.system(size: wordmarkSize, weight: Palette.isGarden ? .semibold : .regular,
+                              design: Palette.isGarden ? .default : .monospaced))
+                .tracking(wordmarkSize * (Palette.isGarden ? -0.06 : -0.07))
                 .lineLimit(1)
-            Rectangle()
+            RoundedRectangle(cornerRadius: Palette.isGarden ? 2 : 0)
+                .fill(Palette.logo)
                 .frame(width: wordmarkSize * 0.47, height: wordmarkSize * 0.88)
                 .offset(y: wordmarkSize * 0.09)
                 .opacity(cursorVisible || !shouldBlink ? 1 : 0)

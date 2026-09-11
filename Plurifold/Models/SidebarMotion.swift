@@ -27,6 +27,11 @@ enum SidebarMotion {
         let origin = startingPosition(start)
         guard width.isFinite, width > 0, translation.isFinite else { return origin >= 0.5 }
         let current = unresistedPosition(origin) + translation / width
+        // A deliberate short flick should not depend on screen width. The
+        // direction on release also allows the user to change their mind.
+        if abs(translation) >= 18, velocity.isFinite, abs(velocity) >= 650 {
+            return velocity > 0
+        }
         // Tiny edge movements do not turn into a fling. A release reversal can
         // change the result because we use the final velocity and position.
         let projection: Double

@@ -37,6 +37,14 @@ final class AudioSessionCoordinator {
         }
     }
 
+    func stopCurrentPlayback() {
+        let stopPrevious = stopOwner
+        owner = nil
+        stopOwner = nil
+        stopPrevious?()
+        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+    }
+
     func release(owner oldOwner: UUID) {
         guard owner == oldOwner else { return }
         owner = nil

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct LiveCourseView: View {
     @EnvironmentObject private var store: LiveLibraryStore
+    @EnvironmentObject private var studyScope: MobileStudyScope
     @Environment(\.dismiss) private var dismiss
     let courseID: String
     @State private var search: String
@@ -24,35 +25,24 @@ struct LiveCourseView: View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 18) {
                 Button { dismiss() } label: {
-                    Label("Back to library", systemImage: "chevron.left")
-                        .font(.subheadline.monospaced())
+                    Label(studyScope.librarySection == .courses ? "Back to courses" : "Back to library", systemImage: "chevron.left")
+                        .font(StudyTypography.font(.subheadline))
                         .frame(minHeight: 44)
                         .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(GardenPressStyle())
                 .foregroundStyle(Palette.accent)
 
                 if let notice = store.notice { LibraryNoticeRow(notice: notice).libraryFrame() }
                 if let course {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Eyebrow(text: "\(course.languageName) course")
-                        Text(course.title)
-                            .font(.title2.monospaced().weight(.medium))
-                            .foregroundStyle(Palette.ink)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .accessibilityAddTraits(.isHeader)
-                        Text("\(allChapters.count) \(allChapters.count == 1 ? "chapter" : "chapters") · Study at your own pace")
-                            .font(.caption.monospaced())
-                            .foregroundStyle(Palette.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
+                    courseHeader(course, chapters: allChapters)
                     chapterSearch
                     HStack(alignment: .firstTextBaseline, spacing: 8) {
                         Text(search.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Chapters" : "Matching chapters")
-                            .font(.headline.monospaced().weight(.regular))
+                            .font(StudyTypography.font(.headline, weight: .semibold))
                         Spacer(minLength: 0)
                         Text("\(chapters.count)")
-                            .font(.caption.monospaced())
+                            .font(StudyTypography.font(.caption))
                             .foregroundStyle(Palette.secondary)
                     }
                     .accessibilityElement(children: .combine)
@@ -62,7 +52,7 @@ struct LiveCourseView: View {
                         NavigationLink(value: MobileStudyRoute.lesson(id: chapter.lesson.id)) {
                             CourseOutlineRow(chapter: chapter, hasPosition: store.positions[chapter.lesson.id] != nil)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(GardenPressStyle())
                     }
                     if chapters.isEmpty {
                         ContentUnavailableView(allChapters.isEmpty ? "No chapters available" : "No matching chapters",
@@ -77,7 +67,7 @@ struct LiveCourseView: View {
                 }
             }
             .frame(maxWidth: 760, alignment: .leading)
-            .padding(.horizontal, 16)
+            .padding(.horizontal, 20)
             .padding(.top, 8)
             .padding(.bottom, 28)
             .frame(maxWidth: .infinity)
@@ -89,13 +79,54 @@ struct LiveCourseView: View {
         .refreshable { await store.refresh() }
     }
 
+    private func courseHeader(_ course: MobileCourse, chapters: [MobileLessonSummary]) -> some View {
+        let savedChapters = chapters.filter { store.positions[$0.id] != nil }
+        return VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 9) {
+                Text(LanguageFlag.symbol(for: course.languageCode)).font(.title3)
+                    .accessibilityHidden(true)
+                Eyebrow(text: LanguageDisplay.nativeName(for: course.languageCode, fallback: course.languageName))
+            }
+            Text(course.title)
+                .font(StudyTypography.font(.title, weight: .bold))
+                .foregroundStyle(Palette.ink)
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityAddTraits(.isHeader)
+            Label("\(chapters.count) \(chapters.count == 1 ? "chapter" : "chapters")", systemImage: "book.pages")
+                .font(StudyTypography.font(.subheadline))
+                .foregroundStyle(Palette.secondary)
+            if !savedChapters.isEmpty {
+                Text("Reading places saved in \(savedChapters.count) of \(chapters.count) chapters.")
+                    .font(StudyTypography.font(.caption))
+                    .foregroundStyle(Palette.secondary)
+            }
+            if let chapter = savedChapters.first ?? chapters.first {
+                NavigationLink(value: MobileStudyRoute.lesson(id: chapter.id)) {
+                    Label(savedChapters.isEmpty ? "Start course" : "Continue reading", systemImage: "arrow.right")
+                        .font(StudyTypography.font(.subheadline, weight: .semibold))
+                        .foregroundStyle(Palette.actionGradientInk)
+                        .padding(.horizontal, 16)
+                        .frame(minHeight: 46)
+                        .background(Palette.actionGradient, in: RoundedRectangle(cornerRadius: Palette.controlRadius))
+                }
+                .buttonStyle(GardenPressStyle())
+                .accessibilityHint("Opens \(chapter.title)")
+            }
+        }
+        .padding(22)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background { GardenSceneBackground(asset: "GardenBotanical") }
+        .clipShape(RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous).stroke(Palette.line, lineWidth: 1))
+    }
+
     private var chapterSearch: some View {
         HStack(spacing: 10) {
             Image(systemName: "magnifyingglass")
                 .foregroundStyle(Palette.secondary)
                 .accessibilityHidden(true)
             TextField("Find a chapter", text: $search)
-                .font(.subheadline.monospaced())
+                .font(StudyTypography.font(.subheadline))
                 .submitLabel(.search)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
@@ -106,16 +137,16 @@ struct LiveCourseView: View {
                         .frame(width: 44, height: 44)
                         .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(GardenPressStyle())
                 .foregroundStyle(Palette.secondary)
                 .accessibilityLabel("Clear chapter search")
             }
         }
         .padding(.leading, 12)
         .padding(.trailing, search.isEmpty ? 12 : 0)
-        .frame(minHeight: 48)
-        .background(Palette.field, in: RoundedRectangle(cornerRadius: 4))
-        .overlay(RoundedRectangle(cornerRadius: 4).stroke(Palette.line, lineWidth: 1))
+        .frame(minHeight: 52)
+        .background(Palette.surface, in: RoundedRectangle(cornerRadius: Palette.controlRadius))
+        .overlay(RoundedRectangle(cornerRadius: Palette.controlRadius).stroke(Palette.line, lineWidth: 1))
     }
 }
 
@@ -136,28 +167,28 @@ private struct CourseOutlineRow: View {
     let hasPosition: Bool
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .top, spacing: 14) {
             Text(String(format: "%02d", chapter.number))
-                .font(.caption.monospaced())
+                .font(StudyTypography.font(.subheadline, weight: .medium))
+                .monospacedDigit()
                 .foregroundStyle(Palette.accent)
-                .padding(.horizontal, 7)
-                .padding(.vertical, 8)
-                .background(Palette.accentSoft, in: RoundedRectangle(cornerRadius: 3))
+                .frame(minWidth: 38, minHeight: 42)
+                .background(Palette.preview, in: RoundedRectangle(cornerRadius: Palette.controlRadius))
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 6) {
                 Text(chapter.title)
-                    .font(.subheadline.monospaced().weight(.medium))
+                    .font(StudyTypography.font(.headline, weight: .medium))
                     .foregroundStyle(Palette.ink)
                     .fixedSize(horizontal: false, vertical: true)
                 if !chapter.lesson.subtitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                     Text(chapter.lesson.subtitle)
-                        .font(.caption)
+                        .font(StudyTypography.font(.subheadline))
                         .foregroundStyle(Palette.secondary)
                         .lineLimit(2)
                 }
                 if hasPosition {
                     Label("Reading place saved", systemImage: "bookmark.fill")
-                        .font(.caption2.monospaced())
+                        .font(StudyTypography.font(.caption))
                         .foregroundStyle(Palette.accent)
                 }
             }
@@ -168,10 +199,8 @@ private struct CourseOutlineRow: View {
                 .padding(.top, 7)
                 .accessibilityHidden(true)
         }
-        .padding(14)
         .frame(maxWidth: .infinity, minHeight: 64, alignment: .leading)
-        .background(Palette.surface, in: RoundedRectangle(cornerRadius: 4))
-        .overlay(RoundedRectangle(cornerRadius: 4).stroke(Palette.line, lineWidth: 1))
+        .gardenCard(padding: 16)
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Chapter \(chapter.number), \(chapter.title)")

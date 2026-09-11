@@ -16,6 +16,7 @@ final class NativeSession: ObservableObject {
     @Published private(set) var isRestoring = true
     @Published private(set) var isBusy = false
     @Published private(set) var errorMessage: String?
+    @Published private(set) var noticeMessage: String?
     @Published private(set) var canRestoreSession = false
 
     /// Identifies one login, independently of the user ID and rotating access token.
@@ -104,6 +105,52 @@ final class NativeSession: ObservableObject {
             guard operation == generation, !(error is CancellationError) else { return }
             errorMessage = message(for: error)
         }
+    }
+
+    /// Confirm-email responses intentionally leave the app signed out. A user
+    /// object alone is not a session, including Supabase's obfuscated response
+    /// for an address that is already registered.
+    func signUp(email: String, password: String) async {
+        guard !isBusy, user == nil else { return }
+        clearAccountMessages()
+        let email = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !email.isEmpty, password.count >= 8 else {
+            errorMessage = "Enter your email address and a password of at least 8 characters."
+            return
+        }
+        let operation = beginOperation(restoring: false)
+        defer { finishOperation(operation) }
+        do {
+            let config = try await loadConfiguration()
+            try requireCurrent(operation)
+            var request = authRequest(path: "signup", config: config)
+            // Confirmation stays on the existing HTTPS site. No native access
+            // token is ever injected into a browser or a confirmation URL.
+            request.url = request.url?.appending(queryItems: [
+                URLQueryItem(name: "redirect_to", value: Self.baseURL.absoluteString)
+            ])
+            request.httpMethod = "POST"
+            request.httpBody = try JSONEncoder().encode(["email": email, "password": password])
+            let data = try await send(request)
+            try requireCurrent(operation)
+            let response = try JSONDecoder().decode(SignUpResponse.self, from: data)
+            if let current = try response.storedSession(origin: config.origin) {
+                try save(current)
+                sessionIdentity = UUID()
+                user = current.user
+                canRestoreSession = false
+            } else {
+                noticeMessage = "Check your email to confirm your account, then return to the app and sign in. If you already have an account, you can sign in now."
+            }
+        } catch {
+            guard operation == generation, !(error is CancellationError) else { return }
+            errorMessage = message(for: error)
+        }
+    }
+
+    func clearAccountMessages() {
+        errorMessage = nil
+        noticeMessage = nil
     }
 
     /// An API 401 can arrive before local expiry. Refresh once and verify with Auth.
@@ -195,6 +242,7 @@ final class NativeSession: ObservableObject {
         isBusy = true
         isRestoring = restoring
         errorMessage = nil
+        noticeMessage = nil
         return generation
     }
 
@@ -362,6 +410,32 @@ private struct TokenResponse: Decodable {
     }
 }
 
+private struct SignUpResponse: Decodable {
+    let access_token: String?
+    let refresh_token: String?
+    let expires_in: Double?
+    let expires_at: Double?
+    let user: SignedInUser?
+    let id: String?
+    let email: String?
+
+    func storedSession(origin: URL) throws -> StoredSession? {
+        if access_token != nil || refresh_token != nil || expires_in != nil {
+            guard let access_token, let refresh_token, let expires_in, let user else {
+                throw NativeAuthError.invalidResponse
+            }
+            return try TokenResponse(access_token: access_token, refresh_token: refresh_token,
+                                     expires_in: expires_in, expires_at: expires_at, user: user)
+                .storedSession(origin: origin)
+        }
+        let confirmationUser = user ?? SignedInUser(id: id ?? "", email: email ?? "")
+        guard !confirmationUser.id.isEmpty, !confirmationUser.email.isEmpty else {
+            throw NativeAuthError.invalidResponse
+        }
+        return nil
+    }
+}
+
 private struct AuthFailure: Decodable { let error_code: String?; let error: String? }
 
 enum NativeAuthError: LocalizedError {
@@ -389,8 +463,12 @@ enum NativeAuthError: LocalizedError {
             if code == "email_not_confirmed" { return "Confirm your email using the link from Plurifold, then sign in." }
             if code == "captcha_failed" { return "Your account requires a security check. Please visit Plurifold on the web for help." }
             if code == "invalid_credentials" { return "That email and password did not match. Please try again." }
+            if code == "weak_password" { return "Choose a stronger password with at least 8 characters." }
+            if code == "user_already_exists" || code == "email_exists" { return "An account already exists for this address. Sign in or reset your password." }
+            if code == "signup_disabled" { return "Account creation is temporarily unavailable. Please try again later." }
+            if code == "email_address_invalid" { return "Enter a valid email address." }
             if status >= 500 { return "Account sign-in is temporarily unavailable. Please try again shortly." }
-            return "Could not sign in. Check your details or reset your password on the website."
+            return "The account request could not be completed. Check your details or use the password reset option."
         }
     }
 }

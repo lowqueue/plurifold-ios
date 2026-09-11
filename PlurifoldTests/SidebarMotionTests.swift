@@ -25,6 +25,49 @@ final class SidebarMotionTests: XCTestCase {
         XCTAssertTrue(SidebarMotion.shouldOpen(start: 1, translation: -26, velocity: 0, width: 340))
     }
 
+    func testDeliberateFlingDoesNotRequireHalfOfAWideDrawer() {
+        for width in [280.0, 340, 600] {
+            XCTAssertTrue(SidebarMotion.shouldOpen(start: 0, translation: 22, velocity: 650, width: width))
+            XCTAssertFalse(SidebarMotion.shouldOpen(start: 1, translation: -22, velocity: -650, width: width))
+            XCTAssertFalse(SidebarMotion.shouldOpen(start: 0, translation: 22, velocity: 100, width: width))
+            XCTAssertTrue(SidebarMotion.shouldOpen(start: 1, translation: -22, velocity: -100, width: width))
+        }
+    }
+
+    func testEdgeStartIncludesAnIntentionalMarginAndLandscapeSafeArea() {
+        XCTAssertTrue(MobileEdgeSwipe.beginsAtEdge(x: 30, safeAreaLeading: 0, width: 390))
+        XCTAssertFalse(MobileEdgeSwipe.beginsAtEdge(x: 45, safeAreaLeading: 0, width: 390))
+        XCTAssertTrue(MobileEdgeSwipe.beginsAtEdge(x: 80, safeAreaLeading: 59, width: 844))
+        XCTAssertFalse(MobileEdgeSwipe.beginsAtEdge(x: 100, safeAreaLeading: 59, width: 844))
+        XCTAssertFalse(MobileEdgeSwipe.beginsAtEdge(x: -1, safeAreaLeading: 0, width: 390))
+        XCTAssertFalse(MobileEdgeSwipe.beginsAtEdge(x: .nan, safeAreaLeading: 0, width: 390))
+        XCTAssertFalse(MobileEdgeSwipe.beginsAtEdge(x: 0, safeAreaLeading: 0, width: 0))
+    }
+
+    func testSlowHorizontalStartUsesTravelInsteadOfNoisyVelocity() {
+        XCTAssertTrue(MobileEdgeSwipe.shouldBegin(horizontal: 12, vertical: 2,
+                                                 velocityX: 0, velocityY: 15, isDrawer: false))
+        XCTAssertTrue(MobileEdgeSwipe.shouldBegin(horizontal: -12, vertical: 2,
+                                                 velocityX: 0, velocityY: 15, isDrawer: true))
+        XCTAssertFalse(MobileEdgeSwipe.shouldBegin(horizontal: -12, vertical: 2,
+                                                  velocityX: -100, velocityY: 0, isDrawer: false))
+        XCTAssertFalse(MobileEdgeSwipe.shouldBegin(horizontal: 10, vertical: 10,
+                                                  velocityX: 200, velocityY: 100, isDrawer: true))
+        XCTAssertFalse(MobileEdgeSwipe.shouldBegin(horizontal: 3, vertical: 15,
+                                                  velocityX: 200, velocityY: 100, isDrawer: false))
+        XCTAssertFalse(MobileEdgeSwipe.shouldBegin(horizontal: 0, vertical: 0,
+                                                  velocityX: 0, velocityY: 0, isDrawer: false))
+        XCTAssertTrue(MobileEdgeSwipe.shouldBegin(horizontal: 0, vertical: 0,
+                                                 velocityX: 100, velocityY: 10, isDrawer: false))
+    }
+
+    func testInvalidEdgeSamplesCannotPopANavigationDestination() {
+        XCTAssertFalse(MobileEdgeSwipe.shouldComplete(horizontal: .infinity, vertical: 0, velocity: 100, width: 390))
+        XCTAssertFalse(MobileEdgeSwipe.shouldComplete(horizontal: 100, vertical: .nan, velocity: 100, width: 390))
+        XCTAssertFalse(MobileEdgeSwipe.shouldComplete(horizontal: 100, vertical: 0, velocity: .infinity, width: 390))
+        XCTAssertFalse(MobileEdgeSwipe.shouldComplete(horizontal: 100, vertical: 0, velocity: 100, width: .infinity))
+    }
+
     func testTinyMovementIgnoresEvenAnExtremeReleaseVelocity() {
         XCTAssertFalse(SidebarMotion.shouldOpen(start: 0, translation: 17, velocity: 10_000, width: 340))
         XCTAssertTrue(SidebarMotion.shouldOpen(start: 1, translation: -17, velocity: -10_000, width: 340))

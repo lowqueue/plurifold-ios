@@ -45,7 +45,9 @@ struct EdgeSwipeNavigation: UIViewControllerRepresentable {
         private weak var owner: UIViewController?
         private var pending: Pending?
         private var attached = false
-        private lazy var edge = UIScreenEdgePanGestureRecognizer(target: self, action: #selector(handlePan(_:)))
+        // Restrict the start in shouldReceive, rather than requiring the
+        // finger to land on UIKit's exact physical screen edge.
+        private lazy var edge = UIPanGestureRecognizer(target: self, action: #selector(handlePan(_:)))
         private lazy var drawer = UIPanGestureRecognizer(target: self, action: #selector(handlePan(_:)))
 
         init(configuration: EdgeSwipeNavigation) {
@@ -60,8 +62,7 @@ struct EdgeSwipeNavigation: UIViewControllerRepresentable {
             view.backgroundColor = .clear
             view.isUserInteractionEnabled = false
             view.isAccessibilityElement = false
-            edge.edges = .left
-            for recognizer in [edge as UIPanGestureRecognizer, drawer] {
+            for recognizer in [edge, drawer] {
                 recognizer.maximumNumberOfTouches = 1
                 recognizer.delaysTouchesBegan = false
                 recognizer.delegate = self
@@ -140,17 +141,33 @@ struct EdgeSwipeNavigation: UIViewControllerRepresentable {
         func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
             guard canNavigate, let surface = gestureRecognizer.view else { return false }
             let point = touch.location(in: surface)
-            guard surface.bounds.contains(point) else { return false }
+            guard surface.bounds.contains(point), !touchUsesHorizontalControl(touch.view) else { return false }
             if gestureRecognizer === drawer { return configuration.isDrawerVisible }
-            // Controller coordinates include landscape notch insets.
-            return !configuration.isDrawerVisible && point.x <= 20
+            return !configuration.isDrawerVisible && MobileEdgeSwipe.beginsAtEdge(
+                x: Double(point.x), safeAreaLeading: Double(surface.safeAreaInsets.left),
+                width: Double(surface.bounds.width))
+        }
+
+        private func touchUsesHorizontalControl(_ touchedView: UIView?) -> Bool {
+            var candidate = touchedView
+            while let current = candidate, current !== owner?.view {
+                // Scrubbing media and editing text must keep their horizontal
+                // gestures. Reader phrase selection keeps its existing hold
+                // recognizer and wins once its hold has begun.
+                if current is UISlider || current is UISwitch || current is UITextField { return true }
+                if let text = current as? UITextView, text.isEditable { return true }
+                candidate = current.superview
+            }
+            return false
         }
 
         func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
             guard canNavigate, let pan = gestureRecognizer as? UIPanGestureRecognizer else { return false }
+            let translation = pan.translation(in: pan.view)
             let velocity = pan.velocity(in: pan.view)
-            if pan === drawer { return abs(velocity.x) > abs(velocity.y) }
-            return velocity.x > abs(velocity.y)
+            return MobileEdgeSwipe.shouldBegin(horizontal: Double(translation.x), vertical: Double(translation.y),
+                                               velocityX: Double(velocity.x), velocityY: Double(velocity.y),
+                                               isDrawer: pan === drawer)
         }
 
         func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer,
@@ -158,7 +175,7 @@ struct EdgeSwipeNavigation: UIViewControllerRepresentable {
             // Native back and scrolling wait for the appropriate horizontal pan.
             // Do not create circular failure dependencies between our own pair.
             guard otherGestureRecognizer !== edge, otherGestureRecognizer !== drawer else { return false }
-            return (gestureRecognizer === edge || gestureRecognizer === drawer)
+            return gestureRecognizer.isEnabled && (gestureRecognizer === edge || gestureRecognizer === drawer)
                 && otherGestureRecognizer is UIPanGestureRecognizer
         }
 
@@ -188,27 +205,29 @@ struct EdgeSwipeNavigation: UIViewControllerRepresentable {
         }
 
         @objc private func handlePan(_ recognizer: UIPanGestureRecognizer) {
+            let source: NavigationSwipe.Source = recognizer === edge ? .edge : .drawer
             switch recognizer.state {
             case .began:
-                guard canNavigate else { return }
-                let captured = Pending(source: recognizer === edge ? .edge : .drawer, intent: configuration.intent)
+                guard canNavigate, pending == nil else { return }
+                let captured = Pending(source: source, intent: configuration.intent)
                 pending = captured
                 configuration.onSwipe(event(.began, pending: captured, recognizer: recognizer))
             case .changed:
-                guard canNavigate, pending?.intent == configuration.intent else {
+                guard let captured = pending, captured.source == source else { return }
+                guard canNavigate, captured.intent == configuration.intent else {
                     cancelPending(deferred: false)
                     return
                 }
-                if let captured = pending {
-                    configuration.onSwipe(event(.changed, pending: captured, recognizer: recognizer))
-                }
+                configuration.onSwipe(event(.changed, pending: captured, recognizer: recognizer))
             case .ended:
-                guard let captured = pending else { return }
+                guard let captured = pending, captured.source == source else { return }
                 pending = nil
                 let phase: NavigationSwipe.Phase = canNavigate && captured.intent == configuration.intent ? .ended : .cancelled
                 configuration.onSwipe(event(phase, pending: captured, recognizer: recognizer))
             case .cancelled, .failed:
-                cancelPending(deferred: false)
+                // A sibling recognizer failing cannot cancel the owner of an
+                // already recognized touch sequence.
+                if pending?.source == source { cancelPending(deferred: false) }
             default:
                 break
             }

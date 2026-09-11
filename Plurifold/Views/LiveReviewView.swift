@@ -38,11 +38,12 @@ struct LiveReviewView: View {
                                         Spacer()
                                         Text("\(review.queue.count) to go")
                                     }
-                                    .font(.caption)
+                                    .font(StudyTypography.font(.caption))
                                     .foregroundStyle(Palette.secondary)
                                     ProgressView(value: Double(review.completedIDs.count), total: Double(max(1, review.totalCount)))
-                                        .tint(Palette.green)
+                                        .tint(Palette.progress)
                                 }
+                                .studyCard()
 
                                 reviewCard(word)
                                     .id(word.id)
@@ -54,9 +55,17 @@ struct LiveReviewView: View {
                                             review.again()
                                         } label: {
                                             Label("Again", systemImage: "arrow.uturn.backward")
+                                                .font(StudyTypography.font(.body, weight: .semibold))
                                                 .frame(maxWidth: .infinity, minHeight: 48)
+                                                .padding(.horizontal, 12)
+                                                .foregroundStyle(Palette.navInk)
+                                                .background(Palette.accentSoft, in: RoundedRectangle(cornerRadius: Palette.controlRadius, style: .continuous))
+                                                .overlay {
+                                                    RoundedRectangle(cornerRadius: Palette.controlRadius, style: .continuous)
+                                                        .strokeBorder(Palette.line, lineWidth: 1)
+                                                }
                                         }
-                                        .buttonStyle(.bordered)
+                                        .buttonStyle(GardenPressStyle())
                                         Button {
                                             review.gotIt()
                                         } label: {
@@ -65,7 +74,7 @@ struct LiveReviewView: View {
                                         .buttonStyle(StudyButtonStyle())
                                     }
                                     Text("Again brings this word back later in the round.")
-                                        .font(.footnote)
+                                        .font(StudyTypography.font(.footnote))
                                         .foregroundStyle(Palette.secondary)
                                 } else {
                                     Button("Reveal meaning") { review.reveal() }
@@ -80,8 +89,7 @@ struct LiveReviewView: View {
                                     Button("Review again") {
                                         review.restart(words: words, languageCode: language.code)
                                     }
-                                    .buttonStyle(.borderedProminent)
-                                    .tint(Palette.accent)
+                                    .buttonStyle(StudyButtonStyle())
                                 }
                             } else {
                                 ProgressView("Preparing your review…").frame(maxWidth: .infinity)
@@ -92,7 +100,7 @@ struct LiveReviewView: View {
                     }
                 }
                 .frame(maxWidth: 620, alignment: .leading)
-                .padding(24)
+                .padding(Palette.isGarden ? 20 : 24)
                 .frame(maxWidth: .infinity)
                 .animation(reduceMotion ? nil : .easeOut(duration: 0.16), value: review.current?.id)
             }
@@ -113,7 +121,7 @@ struct LiveReviewView: View {
             VStack(alignment: .leading, spacing: 10) {
                 Eyebrow(text: word.kind == "phrase" ? "Phrase" : "Word")
                 Text(word.term)
-                    .font(.largeTitle.weight(.semibold))
+                    .font(StudyTypography.font(.largeTitle, weight: .semibold))
                     .fixedSize(horizontal: false, vertical: true)
                 if let pronunciation = word.pronunciation, !pronunciation.isEmpty {
                     Text(pronunciation).font(.subheadline.monospaced()).foregroundStyle(Palette.secondary)
@@ -122,26 +130,27 @@ struct LiveReviewView: View {
             if review.isAnswerRevealed {
                 Divider().overlay(Palette.line)
                 Text(word.meaning.isEmpty ? "No meaning saved yet." : word.meaning)
-                    .font(.title3)
+                    .font(StudyTypography.font(.title3))
                     .textSelection(.enabled)
                 if !word.note.isEmpty {
-                    Text(word.note).foregroundStyle(Palette.secondary)
+                    Text(word.note).font(StudyTypography.font(.body)).foregroundStyle(Palette.secondary)
                 }
                 if !word.context.isEmpty {
                     VStack(alignment: .leading, spacing: 8) {
                         Eyebrow(text: "In context")
-                        Text(word.context).foregroundStyle(Palette.secondary)
+                        Text(word.context).font(StudyTypography.font(.body)).foregroundStyle(Palette.secondary)
                     }
                 }
                 if let title = word.sourceLessonTitle, !title.isEmpty {
-                    Text(title).font(.caption).foregroundStyle(Palette.secondary)
+                    Text(title).font(StudyTypography.font(.caption)).foregroundStyle(Palette.secondary)
                 }
             } else {
                 Text("Can you remember the meaning?")
+                    .font(StudyTypography.font(.body))
                     .foregroundStyle(Palette.secondary)
             }
         }
-        .frame(maxWidth: .infinity, minHeight: 220, alignment: .topLeading)
+        .frame(maxWidth: .infinity, minHeight: Palette.isGarden ? 250 : 220, alignment: .topLeading)
         .studyCard()
         .overlay(alignment: .topLeading) {
             Capsule().fill(Palette.warm).frame(width: 38, height: 4).padding(.leading, 20)

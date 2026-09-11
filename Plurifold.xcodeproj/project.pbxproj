@@ -125,6 +125,28 @@
 			isa = PBXBuildFile;
 			fileRef = 57536FEBA730DF145533431B;
 		};
+		EEFC9146FE4DEC9492EF5AE3 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			name = MobileProgress.swift;
+			path = Plurifold/Models/MobileProgress.swift;
+			sourceTree = SOURCE_ROOT;
+		};
+		86EF601D8796DE519163013D = {
+			isa = PBXBuildFile;
+			fileRef = EEFC9146FE4DEC9492EF5AE3;
+		};
+		210FD4BCA5A018725FAC7EC3 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			name = MobileSpeaking.swift;
+			path = Plurifold/Models/MobileSpeaking.swift;
+			sourceTree = SOURCE_ROOT;
+		};
+		B63F8805EF71DB0FEDADDBAE = {
+			isa = PBXBuildFile;
+			fileRef = 210FD4BCA5A018725FAC7EC3;
+		};
 		1E1BD5C8D6FA5F78E71716F0 = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -146,6 +168,17 @@
 		0BEF205F08D40FECF194FE44 = {
 			isa = PBXBuildFile;
 			fileRef = E1FD20C5A99C5180F17A7339;
+		};
+		0CA47AD97D47D689BB50A56D = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			name = NativeWelcomeLanguages.swift;
+			path = Plurifold/Models/NativeWelcomeLanguages.swift;
+			sourceTree = SOURCE_ROOT;
+		};
+		CDF9B58515C735E1E6728120 = {
+			isa = PBXBuildFile;
+			fileRef = 0CA47AD97D47D689BB50A56D;
 		};
 		FCCDE74481761E321180F995 = {
 			isa = PBXFileReference;
@@ -201,6 +234,17 @@
 		5AA61B68D10DCAB642094FF0 = {
 			isa = PBXBuildFile;
 			fileRef = BC71A782F140CE6CFD4AEF32;
+		};
+		35D6C666E9BA80FF3C6DB440 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			name = WelcomeBubblePhysics.swift;
+			path = Plurifold/Models/WelcomeBubblePhysics.swift;
+			sourceTree = SOURCE_ROOT;
+		};
+		C60253AA5A246D94021D3238 = {
+			isa = PBXBuildFile;
+			fileRef = 35D6C666E9BA80FF3C6DB440;
 		};
 		8F0C391B8A9BBAEA1293B623 = {
 			isa = PBXFileReference;
@@ -279,6 +323,28 @@
 			isa = PBXBuildFile;
 			fileRef = 7DD651426C7C24487EDB7D50;
 		};
+		7F94A4204B9CAB01FBB7E112 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			name = GardenColorwayTokens.swift;
+			path = Plurifold/Views/GardenColorwayTokens.swift;
+			sourceTree = SOURCE_ROOT;
+		};
+		F50C8762EC7E7A3D4D226293 = {
+			isa = PBXBuildFile;
+			fileRef = 7F94A4204B9CAB01FBB7E112;
+		};
+		37DB7B8A54BA7C3E3E252657 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			name = GardenComponents.swift;
+			path = Plurifold/Views/GardenComponents.swift;
+			sourceTree = SOURCE_ROOT;
+		};
+		276AC8B0DFC45225CA3791FD = {
+			isa = PBXBuildFile;
+			fileRef = 37DB7B8A54BA7C3E3E252657;
+		};
 		67E282A4ADCD2A1325542B48 = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -300,6 +366,17 @@
 		78460AFBAE18CEA0D5891148 = {
 			isa = PBXBuildFile;
 			fileRef = 6CCE791C99C49FA04D320090;
+		};
+		916A9B52327C13CC7D8051FB = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			name = LibraryCards.swift;
+			path = Plurifold/Views/LibraryCards.swift;
+			sourceTree = SOURCE_ROOT;
+		};
+		9A9CCAF045A7A47A0EDAA55F = {
+			isa = PBXBuildFile;
+			fileRef = 916A9B52327C13CC7D8051FB;
 		};
 		28695C701D4556AE7F77EA26 = {
 			isa = PBXFileReference;
@@ -345,6 +422,17 @@
 			isa = PBXBuildFile;
 			fileRef = 551CA7DC3E8BCF66A500A7C1;
 		};
+		744138640F91F1AA3BFDF578 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			name = LiveProgressView.swift;
+			path = Plurifold/Views/LiveProgressView.swift;
+			sourceTree = SOURCE_ROOT;
+		};
+		2DA520DA6BA95E8E6607AEB1 = {
+			isa = PBXBuildFile;
+			fileRef = 744138640F91F1AA3BFDF578;
+		};
 		68F685F65E630A1AD48AC010 = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -367,6 +455,17 @@
 			isa = PBXBuildFile;
 			fileRef = 1F3FAF6C0EC547EEB93BFCE6;
 		};
+		571E892D967547B3735D7CB1 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			name = LiveTrophiesView.swift;
+			path = Plurifold/Views/LiveTrophiesView.swift;
+			sourceTree = SOURCE_ROOT;
+		};
+		07E9F115BD610D61BFF808B0 = {
+			isa = PBXBuildFile;
+			fileRef = 571E892D967547B3735D7CB1;
+		};
 		CB83AE2569A2E8514406BD32 = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -377,6 +476,17 @@
 		E1C965005A51C44B9BAC63C3 = {
 			isa = PBXBuildFile;
 			fileRef = CB83AE2569A2E8514406BD32;
+		};
+		0BFE8265D36E3B255A768284 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			name = NativeSpeakingScreen.swift;
+			path = Plurifold/Views/NativeSpeakingScreen.swift;
+			sourceTree = SOURCE_ROOT;
+		};
+		86956F5B8944012D6F324427 = {
+			isa = PBXBuildFile;
+			fileRef = 0BFE8265D36E3B255A768284;
 		};
 		A3131D858AAB9259FCE3E8AC = {
 			isa = PBXFileReference;
@@ -499,6 +609,17 @@
 			isa = PBXBuildFile;
 			fileRef = 5C27279515916A0EF6D55024;
 		};
+		4280101276AA72A56F104ED5 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			name = WelcomeLanguageBubbles.swift;
+			path = Plurifold/Views/WelcomeLanguageBubbles.swift;
+			sourceTree = SOURCE_ROOT;
+		};
+		ACCB0A7E5FAB61917C35F40B = {
+			isa = PBXBuildFile;
+			fileRef = 4280101276AA72A56F104ED5;
+		};
 		EB736CFFA0B82792D7C2658E = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -553,6 +674,17 @@
 		8A524B226F6A9F33A1F431C0 = {
 			isa = PBXBuildFile;
 			fileRef = 8C49776DD068712CD55D46B2;
+		};
+		22BCEEDFF3C9B4E8EF7CD34D = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			name = GardenPaletteTests.swift;
+			path = PlurifoldTests/GardenPaletteTests.swift;
+			sourceTree = SOURCE_ROOT;
+		};
+		FE09D0F359CF5FE692FCD07F = {
+			isa = PBXBuildFile;
+			fileRef = 22BCEEDFF3C9B4E8EF7CD34D;
 		};
 		4A593D179A84AA763459AB64 = {
 			isa = PBXFileReference;
@@ -609,6 +741,28 @@
 			isa = PBXBuildFile;
 			fileRef = 5C76224D1AFBF10BCFDCF49A;
 		};
+		46A6A2CAAE719222415CD7F0 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			name = MobileProgressTests.swift;
+			path = PlurifoldTests/MobileProgressTests.swift;
+			sourceTree = SOURCE_ROOT;
+		};
+		5E7A9A42C8A0D78953AD73EA = {
+			isa = PBXBuildFile;
+			fileRef = 46A6A2CAAE719222415CD7F0;
+		};
+		B743F8B50AC99C897B5BD06E = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			name = MobileSpeakingTests.swift;
+			path = PlurifoldTests/MobileSpeakingTests.swift;
+			sourceTree = SOURCE_ROOT;
+		};
+		B500626A90F595BC39ECE546 = {
+			isa = PBXBuildFile;
+			fileRef = B743F8B50AC99C897B5BD06E;
+		};
 		77FAD39135F8D56E2794CA5C = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -641,6 +795,17 @@
 		F562DE94BB7A2DA290597243 = {
 			isa = PBXBuildFile;
 			fileRef = F6EF041952115A4BBD5BCABB;
+		};
+		A9AA1A8768D0AE3CBCB6E1C3 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			name = NativeWelcomeLanguagesTests.swift;
+			path = PlurifoldTests/NativeWelcomeLanguagesTests.swift;
+			sourceTree = SOURCE_ROOT;
+		};
+		839F3F35E3821603E94C9760 = {
+			isa = PBXBuildFile;
+			fileRef = A9AA1A8768D0AE3CBCB6E1C3;
 		};
 		2CAAD1237BE18426D8F28DD2 = {
 			isa = PBXFileReference;
@@ -697,6 +862,17 @@
 			isa = PBXBuildFile;
 			fileRef = 3631274E3A8AC23F1FE90EF5;
 		};
+		E4657FFCB78923B9570B35E0 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			name = WelcomeBubblePhysicsTests.swift;
+			path = PlurifoldTests/WelcomeBubblePhysicsTests.swift;
+			sourceTree = SOURCE_ROOT;
+		};
+		E1F7665B570D01E556E983B4 = {
+			isa = PBXBuildFile;
+			fileRef = E4657FFCB78923B9570B35E0;
+		};
 		81F31879437340D5CD6ED968 = {
 			isa = PBXFileReference;
 			explicitFileType = wrapper.application;
@@ -725,13 +901,17 @@
 				FBAFBC65A9061DE7AE9E9EB1,
 				489F135F79503D26C6230310,
 				57536FEBA730DF145533431B,
+				EEFC9146FE4DEC9492EF5AE3,
+				210FD4BCA5A018725FAC7EC3,
 				1E1BD5C8D6FA5F78E71716F0,
 				E1FD20C5A99C5180F17A7339,
+				0CA47AD97D47D689BB50A56D,
 				FCCDE74481761E321180F995,
 				FD6B7460B0E80F95C17CE802,
 				45FDF515BE2FBDD1DA7F1820,
 				04EF4073610BF239A5FE9CCD,
 				BC71A782F140CE6CFD4AEF32,
+				35D6C666E9BA80FF3C6DB440,
 				8F0C391B8A9BBAEA1293B623,
 				27B800BF2A67A1979D115795,
 				B078C8266EB18850E16793C2,
@@ -739,15 +919,21 @@
 				1DD473AADA9AE996BA68047C,
 				DD8574F1C4ED626163936A77,
 				7DD651426C7C24487EDB7D50,
+				7F94A4204B9CAB01FBB7E112,
+				37DB7B8A54BA7C3E3E252657,
 				67E282A4ADCD2A1325542B48,
 				6CCE791C99C49FA04D320090,
+				916A9B52327C13CC7D8051FB,
 				28695C701D4556AE7F77EA26,
 				274AF5D5DF6DE1E8B5693295,
 				ADA7C43E042B9C802E0D7B93,
 				551CA7DC3E8BCF66A500A7C1,
+				744138640F91F1AA3BFDF578,
 				68F685F65E630A1AD48AC010,
 				1F3FAF6C0EC547EEB93BFCE6,
+				571E892D967547B3735D7CB1,
 				CB83AE2569A2E8514406BD32,
+				0BFE8265D36E3B255A768284,
 				A3131D858AAB9259FCE3E8AC,
 				74BA000BB8654EDBD9234CB5,
 				A496D34654A89E2D75E0C8E8,
@@ -759,6 +945,7 @@
 				10EC8095A40C01685C38498B,
 				37B982ABA9965D7F0D443853,
 				5C27279515916A0EF6D55024,
+				4280101276AA72A56F104ED5,
 				EB736CFFA0B82792D7C2658E,
 				9FC0AD6CBACCF4848DDC01A8,
 				A992EB019FD3F1296346B3F3,
@@ -771,19 +958,24 @@
 			isa = PBXGroup;
 			children = (
 				8C49776DD068712CD55D46B2,
+				22BCEEDFF3C9B4E8EF7CD34D,
 				4A593D179A84AA763459AB64,
 				11A9D357D6BAD0B274F52A36,
 				ACDE2441018A69AB059EE86D,
 				98A52FBD2A999FC18F1ADC67,
 				5C76224D1AFBF10BCFDCF49A,
+				46A6A2CAAE719222415CD7F0,
+				B743F8B50AC99C897B5BD06E,
 				77FAD39135F8D56E2794CA5C,
 				DA6E73682649E2F7377DD9CB,
 				F6EF041952115A4BBD5BCABB,
+				A9AA1A8768D0AE3CBCB6E1C3,
 				2CAAD1237BE18426D8F28DD2,
 				613C048CC301C47E4F97449D,
 				ABEDD5E54000503E37411353,
 				AEB66B25AAAAAE17E5207641,
 				3631274E3A8AC23F1FE90EF5,
+				E4657FFCB78923B9570B35E0,
 			);
 			name = PlurifoldTests;
 			sourceTree = "<group>";
@@ -821,13 +1013,17 @@
 				265AFCB8CB48947F58D1DDE6,
 				DF144BFA758030CD5E5BCE46,
 				5A86341D97B99553B5515FC2,
+				86EF601D8796DE519163013D,
+				B63F8805EF71DB0FEDADDBAE,
 				271425FBD693E35D6EF48401,
 				0BEF205F08D40FECF194FE44,
+				CDF9B58515C735E1E6728120,
 				6BE4D1623D292EFDB86172C6,
 				001990D55EA2295FF8AE8755,
 				942F1C1BB79653E18F634AA6,
 				801E2D711DD13164ED25902E,
 				5AA61B68D10DCAB642094FF0,
+				C60253AA5A246D94021D3238,
 				EA26215B2CBBB6E4A0843930,
 				38D2436C76464B6888E6D73A,
 				12E5467028C57AA81AD0A4A9,
@@ -835,15 +1031,21 @@
 				5B58BE6552AC71E88E532BF9,
 				F589FB07E35D38E9E7ECD85E,
 				8EA5C7C25E823A0C59982687,
+				F50C8762EC7E7A3D4D226293,
+				276AC8B0DFC45225CA3791FD,
 				1189CD96FECD08F49A6AABEA,
 				78460AFBAE18CEA0D5891148,
+				9A9CCAF045A7A47A0EDAA55F,
 				925FBE29E4DACFD93A142C87,
 				FB7CE91BE72F5689BE1DA125,
 				0B057DCD912F3B15CA839443,
 				205BD47E7B7D8A2EF076AD3C,
+				2DA520DA6BA95E8E6607AEB1,
 				8F0F30D428935EC2B449FE6A,
 				794E70C599E240D60BCC6119,
+				07E9F115BD610D61BFF808B0,
 				E1C965005A51C44B9BAC63C3,
+				86956F5B8944012D6F324427,
 				32FDF396F38F644B5D2FEFE5,
 				50F9201B28DF0EE4A22F8C73,
 				842F52A8E5ECFA0C28985415,
@@ -855,6 +1057,7 @@
 				7741ED8ED2747D99C8C44D30,
 				47109B9DAE50B344A675BF3A,
 				762E183886E467C74CEB4DA9,
+				ACCB0A7E5FAB61917C35F40B,
 				85AAF029264BBF1D4BC9F171,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -880,19 +1083,24 @@
 			buildActionMask = 2147483647;
 			files = (
 				8A524B226F6A9F33A1F431C0,
+				FE09D0F359CF5FE692FCD07F,
 				2A2DF71F7EE313CF7F57E349,
 				E706D2DB7916E0B25A680554,
 				E6A046922C6410DAC801539F,
 				65524EE3EE75525C71F7956E,
 				320B5080435A394026B0D39E,
+				5E7A9A42C8A0D78953AD73EA,
+				B500626A90F595BC39ECE546,
 				85E6FB6D815149B338730628,
 				1424F2DC829C9BCF7BC3C43D,
 				F562DE94BB7A2DA290597243,
+				839F3F35E3821603E94C9760,
 				0F72CEBFF839F4875FFB6B41,
 				5AC76136B058CFE0363E83D3,
 				B132313C62CAE02E05680523,
 				0FB00C0B29D9AE6685ACF9F0,
 				42615D83D819438D66F8ED9F,
+				E1F7665B570D01E556E983B4,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -978,6 +1186,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.plurifold.ios.prototype;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				INFOPLIST_KEY_CFBundleDisplayName = Plurifold;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Plurifold uses your microphone for live speaking practice when you choose to begin.";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -1008,6 +1217,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.plurifold.ios.prototype;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				INFOPLIST_KEY_CFBundleDisplayName = Plurifold;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Plurifold uses your microphone for live speaking practice when you choose to begin.";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;

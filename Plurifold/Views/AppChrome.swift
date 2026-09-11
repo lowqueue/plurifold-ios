@@ -14,7 +14,7 @@ struct AppMasthead: View {
                     .contentShape(Rectangle())
             }
             .accessibilityLabel("Open navigation menu")
-            Button { studyScope.showLanguagePicker() } label: {
+            Button { studyScope.showHome() } label: {
                 PlurifoldLogo()
                     .frame(minHeight: 44)
                     .contentShape(Rectangle())
@@ -23,15 +23,17 @@ struct AppMasthead: View {
             Spacer(minLength: 8)
             Button { showingAccount = true } label: {
                 Text(session.user?.email.first.map { String($0).uppercased() } ?? "?")
-                    .font(.body.monospaced())
+                    .font(StudyTypography.font(.body))
+                    .foregroundStyle(Palette.ink)
                     .frame(width: 30, height: 30)
-                    .overlay(Rectangle().stroke(Palette.headerInk.opacity(0.45), lineWidth: 1))
+                    .background(Palette.field, in: Circle())
+                    .overlay(Circle().stroke(Palette.line, lineWidth: 1))
                     .frame(width: 44, height: 44)
                     .contentShape(Rectangle())
             }
             .accessibilityLabel("Account and appearance")
         }
-        .buttonStyle(.plain)
+        .buttonStyle(GardenPressStyle())
         .foregroundStyle(Palette.headerInk)
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
@@ -45,7 +47,7 @@ struct AppLanguageBar: View {
     @EnvironmentObject private var studyScope: MobileStudyScope
 
     private var languages: [MobileLanguageOption] {
-        MobileStudyLanguageList(courses: store.courses, words: store.words).languages
+        MobileStudyLanguageList(courses: store.courses, words: store.words, includeOffered: true).languages
     }
 
     var body: some View {
@@ -72,7 +74,7 @@ struct AppLanguageBar: View {
                     } else { Text("Your languages") }
                     Image(systemName: "chevron.down").font(.caption)
                 }
-                .font(.subheadline.monospaced())
+                .font(StudyTypography.font(.subheadline))
                 .frame(minHeight: 44)
                 .contentShape(Rectangle())
             }
@@ -91,7 +93,7 @@ struct AppLanguageBar: View {
             .disabled(store.isLoading || store.isSaving)
             .accessibilityLabel(store.isLoading ? "Refreshing library" : "Refresh library and saved words")
         }
-        .buttonStyle(.plain)
+        .buttonStyle(GardenPressStyle())
         .foregroundStyle(Palette.ink)
         .padding(.horizontal, 16)
         .padding(.vertical, 2)
@@ -114,13 +116,19 @@ struct AccountView: View {
                 VStack(alignment: .leading, spacing: 24) {
                     VStack(alignment: .leading, spacing: 8) {
                         Eyebrow(text: "Your account")
-                        Text("Account").font(.largeTitle.monospaced())
+                        Text("Account").font(StudyTypography.font(.largeTitle))
                         if let email = session.user?.email {
-                            Text(email).font(.subheadline.monospaced()).textSelection(.enabled)
+                            Text(email).font(StudyTypography.font(.subheadline)).textSelection(.enabled)
                         }
                     }
                     VStack(alignment: .leading, spacing: 16) {
-                        Text("Colorway").font(.headline.monospaced())
+                        Text("Layout").font(StudyTypography.font(.headline))
+                        Picker("Layout", selection: $appearance.workspaceLayout) {
+                            ForEach(AppWorkspaceLayout.allCases) { layout in Text(layout.name).tag(layout) }
+                        }
+                        .pickerStyle(.segmented)
+                        Text(appearance.workspaceLayout.detail).font(.caption).foregroundStyle(Palette.secondary)
+                        Text("Colorway").font(StudyTypography.font(.headline))
                         ForEach(AppColorway.allCases) { colorway in
                             Button { appearance.colorway = colorway } label: {
                                 HStack(spacing: 14) {
@@ -132,7 +140,7 @@ struct AccountView: View {
                                     .frame(width: 66, height: 36)
                                     .overlay(Rectangle().stroke(Palette.line, lineWidth: 1))
                                     VStack(alignment: .leading, spacing: 5) {
-                                        Text(colorway.name).font(.body.monospaced())
+                                        Text(colorway.name).font(StudyTypography.font(.body))
                                         Text(colorway.detail).font(.caption).foregroundStyle(Palette.secondary)
                                     }
                                     Spacer(minLength: 0)
@@ -141,16 +149,16 @@ struct AccountView: View {
                                 }
                                 .padding(12)
                                 .frame(maxWidth: .infinity, alignment: .leading)
-                                .background(appearance.colorway == colorway ? Palette.field : Palette.surface)
-                                .overlay(RoundedRectangle(cornerRadius: 3)
+                                .background(appearance.colorway == colorway ? Palette.field : Palette.surface, in: RoundedRectangle(cornerRadius: Palette.controlRadius))
+                                .overlay(RoundedRectangle(cornerRadius: Palette.controlRadius)
                                     .stroke(appearance.colorway == colorway ? Palette.accent : Palette.line, lineWidth: 1))
                                 .contentShape(Rectangle())
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(GardenPressStyle())
                             .accessibilityLabel("\(colorway.name), \(colorway.detail)")
                             .accessibilityAddTraits(appearance.colorway == colorway ? .isSelected : [])
                         }
-                        Text("Lighting").font(.headline.monospaced()).padding(.top, 8)
+                        Text("Lighting").font(StudyTypography.font(.headline)).padding(.top, 8)
                         Picker("Lighting", selection: $appearance.lighting) {
                             ForEach(AppLighting.allCases) { lighting in
                                 Text(lighting.name).tag(lighting)
@@ -162,7 +170,7 @@ struct AccountView: View {
                     }
                     .studyCard()
                     VStack(alignment: .leading, spacing: 16) {
-                        Text("Library and account").font(.headline.monospaced())
+                        Text("Library and account").font(StudyTypography.font(.headline))
                         Text("Saved vocabulary and reading places are shared with your Plurifold account.")
                             .font(.subheadline).foregroundStyle(Palette.secondary)
                         Button { Task { await store.refresh() } } label: {

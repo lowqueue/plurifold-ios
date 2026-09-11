@@ -63,6 +63,26 @@ enum AppLighting: String, CaseIterable, Identifiable, Codable {
     }
 }
 
+enum AppWorkspaceLayout: String, CaseIterable, Identifiable, Codable {
+    case garden, original
+
+    var id: String { rawValue }
+
+    var name: String {
+        switch self {
+        case .garden: "Garden"
+        case .original: "Original"
+        }
+    }
+
+    var detail: String {
+        switch self {
+        case .garden: "Scenic, spacious, and softly rounded"
+        case .original: "Compact with a terminal-inspired appearance"
+        }
+    }
+}
+
 /// One device preference shared by every scene, including account sheets.
 /// Observation also tracks reads made through Palette's computed properties,
 /// allowing existing views to recolor without rebuilding their navigation state.
@@ -71,6 +91,7 @@ final class AppAppearance {
     static let shared = AppAppearance()
     static let colorwayStorageKey = "plurifold-colorway"
     static let lightingStorageKey = "plurifold-lighting"
+    static let workspaceLayoutStorageKey = "plurifold-workspace-layout"
 
     @ObservationIgnored private let defaults: UserDefaults
 
@@ -86,8 +107,16 @@ final class AppAppearance {
         }
     }
 
+    var workspaceLayout: AppWorkspaceLayout {
+        didSet {
+            if workspaceLayout != oldValue {
+                defaults.set(workspaceLayout.rawValue, forKey: Self.workspaceLayoutStorageKey)
+            }
+        }
+    }
+
     var preferredColorScheme: ColorScheme? { lighting.colorScheme }
-    var revisionID: String { "\(colorway.rawValue):\(lighting.rawValue)" }
+    var revisionID: String { "\(colorway.rawValue):\(lighting.rawValue):\(workspaceLayout.rawValue)" }
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -95,5 +124,7 @@ final class AppAppearance {
         // website's Verdant default until a person explicitly chooses another.
         colorway = defaults.string(forKey: Self.colorwayStorageKey).flatMap(AppColorway.init(rawValue:)) ?? .verdant
         lighting = defaults.string(forKey: Self.lightingStorageKey).flatMap(AppLighting.init(rawValue:)) ?? .system
+        workspaceLayout = defaults.string(forKey: Self.workspaceLayoutStorageKey)
+            .flatMap(AppWorkspaceLayout.init(rawValue:)) ?? .garden
     }
 }

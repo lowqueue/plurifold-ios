@@ -1,0 +1,29 @@
+name: iOS validation
+on:
+  push:
+    branches: [main, 'codex/ios-garden']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ios-validation-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  simulator:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate Xcode project
+        run: python3 scripts/generate_project.py
+      - name: Build and run native tests
+        run: bash scripts/test_ios.sh
+      - name: Preserve test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-test-results
+          path: build/test-results
+          retention-days: 7

@@ -35,6 +35,44 @@ final class PlurifoldAPI {
         try await send(path, method: "POST", body: JSONEncoder().encode(body))
     }
 
+    /// Realtime setup must not silently replay a rate-limited start. Return the
+    /// original status, SDP, and cooldown headers to the room's recovery UI.
+    func speakingRequest(operation: MobileSpeakingOperation, body: Data) async throws -> MobileSpeakingHTTPResponse {
+        let url = origin.appendingPathComponent(String(operation.path.dropFirst()))
+        var recoveredAuthentication = false
+        while true {
+            try requireCurrentSession()
+            let token = try await account.accessToken()
+            try requireCurrentSession()
+            var request = URLRequest(url: url)
+            request.httpMethod = "POST"
+            request.httpBody = body
+            request.httpShouldHandleCookies = false
+            request.timeoutInterval = operation == .hangup ? 15 : 55
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            let (data, response) = try await transport.data(for: request)
+            try requireCurrentSession()
+            guard let http = response as? HTTPURLResponse, data.count <= 160_000,
+                  let text = String(data: data, encoding: .utf8) else { throw PlurifoldAPIError.invalidResponse }
+            if http.statusCode == 401 {
+                guard !recoveredAuthentication else {
+                    account.rejectUnauthorizedSession(expectedIdentity: expectedSessionIdentity)
+                    throw PlurifoldAPIError.httpStatus(401, message: nil)
+                }
+                recoveredAuthentication = true
+                try await account.recoverUnauthorized()
+                continue
+            }
+            guard !(300..<400).contains(http.statusCode) else { throw PlurifoldAPIError.invalidAddress }
+            var headers: [String: String] = [:]
+            for name in ["content-type", "retry-after", "x-plurifold-realtime-session"] {
+                if let value = http.value(forHTTPHeaderField: name) { headers[name] = value }
+            }
+            return MobileSpeakingHTTPResponse(status: http.statusCode, headers: headers, body: text)
+        }
+    }
+
     private func send<T: Decodable>(_ path: String, method: String, body: Data?) async throws -> T {
         guard path.hasPrefix("/"), !path.hasPrefix("//"),
               let url = URL(string: path, relativeTo: origin)?.absoluteURL,

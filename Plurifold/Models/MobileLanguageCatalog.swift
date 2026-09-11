@@ -4,7 +4,7 @@ enum LanguageDisplay {
     static func nativeName(for code: String, fallback: String) -> String {
         let key = code.lowercased().replacingOccurrences(of: "_", with: "-").split(separator: "-").first.map(String.init) ?? ""
         return ["it": "Italiano", "es": "Español", "et": "Eesti", "ka": "ქართული",
-                "ru": "Русский", "uk": "Українська", "ja": "日本語"][key] ?? fallback
+                "ru": "Русский", "uk": "Українська", "ja": "日本語", "de": "Deutsch"][key] ?? fallback
     }
 }
 
@@ -67,9 +67,6 @@ struct MobileLanguageCatalog {
 
 enum LanguageFlag {
     static func symbol(for code: String) -> String {
-        // The website uses es-AR for the whole Spanish library, with dialects
-        // carried on individual lessons. This tile represents that language.
-        if code.replacingOccurrences(of: "_", with: "-").lowercased() == "es-ar" { return "🇪🇸" }
         let parts = code.replacingOccurrences(of: "_", with: "-").split(separator: "-")
         let language = parts.first?.lowercased() ?? ""
         let preferredRegion: [String: String] = [

@@ -52,22 +52,37 @@ struct LiveWordsView: View {
                         Section {
                             ForEach(filteredWords) { word in
                                 Button { selectedWord = word } label: {
-                                    VStack(alignment: .leading, spacing: 6) {
-                                        Text(word.term).font(.headline).foregroundStyle(Palette.ink)
-                                        Text(word.meaning)
-                                            .font(.subheadline)
-                                            .foregroundStyle(Palette.secondary)
-                                            .lineLimit(3)
-                                        if let title = word.sourceLessonTitle, !title.isEmpty {
-                                            Text(title).font(.caption).foregroundStyle(Palette.secondary).lineLimit(1)
+                                    HStack(spacing: 16) {
+                                        VStack(alignment: .leading, spacing: Palette.isGarden ? 8 : 6) {
+                                            Text(word.term)
+                                                .font(StudyTypography.font(.headline, weight: .semibold))
+                                                .foregroundStyle(Palette.ink)
+                                            Text(word.meaning)
+                                                .font(StudyTypography.font(.subheadline))
+                                                .foregroundStyle(Palette.secondary)
+                                                .lineLimit(3)
+                                            if let title = word.sourceLessonTitle, !title.isEmpty {
+                                                Label(title, systemImage: "book.closed")
+                                                    .font(StudyTypography.font(.caption))
+                                                    .foregroundStyle(Palette.secondary)
+                                                    .lineLimit(1)
+                                            }
+                                        }
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        if Palette.isGarden {
+                                            Image(systemName: "chevron.right")
+                                                .font(.caption.weight(.semibold))
+                                                .foregroundStyle(Palette.secondary)
+                                                .accessibilityHidden(true)
                                         }
                                     }
-                                    .padding(.vertical, 6)
+                                    .padding(.vertical, Palette.isGarden ? 12 : 6)
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                     .contentShape(Rectangle())
                                 }
-                                .buttonStyle(.plain)
+                                .buttonStyle(GardenPressStyle())
                                 .listRowBackground(Palette.surface)
+                                .listRowSeparatorTint(Palette.line)
                                 .swipeActions {
                                     Button(role: .destructive) {
                                         Task { await store.removeWord(word.id) }
@@ -79,9 +94,11 @@ struct LiveWordsView: View {
                             }
                         } header: {
                             Text("\(filteredWords.count) saved \(filteredWords.count == 1 ? "item" : "items")")
+                                .font(StudyTypography.font(.caption, weight: .medium))
                                 .textCase(nil)
                         } footer: {
                             Text("Swipe left to remove a saved word from your account.")
+                                .font(StudyTypography.font(.caption))
                         }
                     }
                 } else {
@@ -92,10 +109,11 @@ struct LiveWordsView: View {
                 }
             }
             .listStyle(.insetGrouped)
+            .listSectionSpacing(Palette.isGarden ? 20 : 12)
             .scrollContentBackground(.hidden)
             .studyBackground()
             .tint(Palette.accent)
-            .navigationTitle("Words")
+            .navigationTitle("Saved")
             .searchable(text: $search, prompt: "Words and meanings in this language")
             .refreshable { await store.refresh() }
             .task { if !store.hasLoaded { await store.refresh() } }
@@ -130,10 +148,16 @@ struct StudyLanguageHeader: View {
     var body: some View {
         HStack(spacing: 12) {
             Text(language.flag).font(.title2).accessibilityHidden(true)
-            Text(language.name).font(.headline).fixedSize(horizontal: false, vertical: true)
+            Text(LanguageDisplay.nativeName(for: language.code, fallback: language.name))
+                .font(StudyTypography.font(.headline, weight: .semibold))
+                .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 8)
             Button("Change") { studyScope.showLanguagePicker() }
-                .font(.subheadline)
+                .font(StudyTypography.font(.subheadline, weight: .medium))
+                .frame(minHeight: 44)
+                .padding(.horizontal, Palette.isGarden ? 12 : 0)
+                .background(Palette.isGarden ? Palette.accentSoft : .clear, in: Capsule())
+                .buttonStyle(GardenPressStyle())
                 .accessibilityLabel("Change study language")
         }
         .foregroundStyle(Palette.ink)
@@ -151,8 +175,7 @@ struct ChooseStudyLanguageView: View {
             Text("Choose a language on Home to see its saved words and review them.")
         } actions: {
             Button("Choose a language") { studyScope.showLanguagePicker() }
-                .buttonStyle(.borderedProminent)
-                .tint(Palette.accent)
+                .buttonStyle(StudyButtonStyle())
         }
     }
 }
@@ -169,18 +192,23 @@ private struct LiveSavedWordDetail: View {
                 VStack(alignment: .leading, spacing: 22) {
                     VStack(alignment: .leading, spacing: 10) {
                         Eyebrow(text: word.languageName)
-                        Text(word.term).font(.largeTitle.weight(.semibold)).textSelection(.enabled)
+                        Text(word.term)
+                            .font(StudyTypography.font(.largeTitle, weight: .semibold))
+                            .textSelection(.enabled)
                         if let pronunciation = word.pronunciation, !pronunciation.isEmpty {
                             Text(pronunciation).font(.body.monospaced()).foregroundStyle(Palette.secondary)
                         }
                         if let partOfSpeech = word.partOfSpeech, !partOfSpeech.isEmpty {
-                            Text(partOfSpeech).font(.subheadline.italic()).foregroundStyle(Palette.secondary)
+                            Text(partOfSpeech)
+                                .font(StudyTypography.font(.subheadline).italic())
+                                .foregroundStyle(Palette.secondary)
                         }
                     }
                     VStack(alignment: .leading, spacing: 12) {
-                        Text(word.meaning).font(.title3).textSelection(.enabled)
+                        Text(word.meaning).font(StudyTypography.font(.title3)).textSelection(.enabled)
                         if !word.note.isEmpty {
-                            Text(word.note).foregroundStyle(Palette.secondary).textSelection(.enabled)
+                            Text(word.note).font(StudyTypography.font(.body))
+                                .foregroundStyle(Palette.secondary).textSelection(.enabled)
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -195,22 +223,24 @@ private struct LiveSavedWordDetail: View {
                     }
                     .buttonStyle(StudyButtonStyle())
                     if let notice = speech.notice {
-                        Text(notice).font(.footnote).foregroundStyle(Palette.secondary)
+                        Text(notice).font(StudyTypography.font(.footnote)).foregroundStyle(Palette.secondary)
                     }
 
                     if !word.context.isEmpty {
                         VStack(alignment: .leading, spacing: 10) {
                             Eyebrow(text: "In context")
-                            Text(word.context).textSelection(.enabled)
+                            Text(word.context).font(StudyTypography.font(.body)).textSelection(.enabled)
                             if let title = word.sourceLessonTitle, !title.isEmpty {
-                                Text(title).font(.caption).foregroundStyle(Palette.secondary)
+                                Text(title).font(StudyTypography.font(.caption)).foregroundStyle(Palette.secondary)
                             }
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .studyCard()
                     }
                 }
-                .padding(24)
+                .frame(maxWidth: 680, alignment: .leading)
+                .padding(Palette.isGarden ? 20 : 24)
+                .frame(maxWidth: .infinity)
             }
             .studyBackground()
             .navigationTitle("Saved word")
@@ -221,6 +251,6 @@ private struct LiveSavedWordDetail: View {
             .onDisappear { speech.stop() }
             .onChange(of: scenePhase) { _, phase in if phase != .active { speech.stop() } }
         }
-        .tint(Palette.ink)
+        .tint(Palette.accent)
     }
 }

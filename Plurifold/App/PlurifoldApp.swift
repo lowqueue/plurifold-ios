@@ -55,11 +55,18 @@ private struct SignedInRoot: View {
                         .tabItem { Label("Home", systemImage: "house") }
                         .tag(MobileStudyTab.home)
                     LiveWordsView()
-                        .tabItem { Label("Words", systemImage: "bookmark") }
+                        .tabItem { Label("Saved", systemImage: "bookmark") }
                         .tag(MobileStudyTab.words)
                     LiveReviewView()
                         .tabItem { Label("Review", systemImage: "rectangle.on.rectangle") }
                         .tag(MobileStudyTab.review)
+                    NavigationStack {
+                        LiveProgressView(onOpenLesson: { studyScope.openLesson($0) },
+                                         onTrophies: { studyScope.showingTrophies = true },
+                                         onBrowse: { studyScope.openLibrary(.lessons) })
+                    }
+                        .tabItem { Label("Progress", systemImage: "chart.bar") }
+                        .tag(MobileStudyTab.progress)
                     AccountView()
                         .tabItem { Label("Account", systemImage: "person.crop.circle") }
                         .tag(MobileStudyTab.account)
@@ -72,10 +79,32 @@ private struct SignedInRoot: View {
         .tint(Palette.accent)
         .environmentObject(store)
         .environmentObject(studyScope)
+        .sheet(isPresented: $studyScope.showingSpeaking, onDismiss: { Task { await store.refresh() } }) {
+            NativeSpeakingScreen(initialLanguage: studyScope.language?.code)
+        }
+        .onChange(of: studyScope.showingSpeaking) { _, showing in
+            if showing { AudioSessionCoordinator.shared.stopCurrentPlayback() }
+        }
+        .sheet(isPresented: $studyScope.showingTrophies) {
+            NavigationStack {
+                LiveTrophiesView()
+                    .toolbar { ToolbarItem(placement: .confirmationAction) {
+                        Button("Done") { studyScope.showingTrophies = false }
+                    } }
+            }
+        }
         .onChange(of: store.isLoading) { _, loading in
             // Reconcile the completed catalog + vocabulary snapshot together.
             if !loading, store.notice == nil {
-                studyScope.reconcile(languages: MobileStudyLanguageList(courses: store.courses, words: store.words).languages)
+                studyScope.reconcile(languages: MobileStudyLanguageList(courses: store.courses, words: store.words, includeOffered: true).languages)
+                if studyScope.language == nil {
+                    let languages = MobileStudyLanguageList(courses: store.courses, words: store.words, includeOffered: true).languages
+                    let selection = NativeWelcomeLanguages.takeSelection()
+                    if let chosen = languages.first(where: { $0.code == selection.first }) {
+                        studyScope.selectLanguage(chosen)
+                        studyScope.showHome()
+                    }
+                }
             }
             if !loading { refreshAfterReturning() }
         }

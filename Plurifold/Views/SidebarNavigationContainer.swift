@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// Non-observable presentation sample. Reading it at touch-down lets a new drag
 /// catch a settling drawer at its displayed position instead of its target.
@@ -31,6 +32,7 @@ struct SidebarNavigationContainer<Content: View>: View {
         let intent: MobileEdgeNavigationIntent
         let isDrawer: Bool
         let start: Double
+        let translationOffset: Double
         let wasOpen: Bool
     }
 
@@ -44,6 +46,7 @@ struct SidebarNavigationContainer<Content: View>: View {
     @State private var isSettledOpen = false
     @State private var handledOpen = false
     @State private var settleToken = UUID()
+    @State private var feedback = UISelectionFeedbackGenerator()
     private let content: Content
 
     init(@ViewBuilder content: () -> Content) {
@@ -138,29 +141,37 @@ struct SidebarNavigationContainer<Content: View>: View {
             guard event.intent == studyScope.edgeNavigationIntent, scenePhase == .active else { return }
             let isDrawer = event.source == .drawer || event.intent.action == .sidebar
             let start = isDrawer ? presentation.position : 0
+            // When catching a moving spring, UIKit has already consumed a few
+            // points deciding this is a pan. Do not add that earlier movement
+            // to the displayed position we have only just captured.
+            let offset = isDrawer && isSurfaceVisible && !isSettledOpen ? Double(event.translation.width) : 0
             settleToken = UUID()
             drag = DragSession(id: event.id, intent: event.intent, isDrawer: isDrawer,
-                               start: start, wasOpen: studyScope.isSidebarPresented)
+                               start: start, translationOffset: offset, wasOpen: studyScope.isSidebarPresented)
             if isDrawer {
+                feedback.prepare()
                 isSurfaceVisible = true
                 isSettledOpen = false
-                track(SidebarMotion.position(start: start, translation: Double(event.translation.width),
+                track(SidebarMotion.position(start: start, translation: Double(event.translation.width) - offset,
                                               width: travel, reduceMotion: reduceMotion))
             }
         case .changed:
             guard let current = drag, current.id == event.id,
                   current.intent == studyScope.edgeNavigationIntent, current.isDrawer else { return }
-            track(SidebarMotion.position(start: current.start, translation: Double(event.translation.width),
+            track(SidebarMotion.position(start: current.start, translation: Double(event.translation.width) - current.translationOffset,
                                          width: travel, reduceMotion: reduceMotion))
         case .ended:
             guard let current = drag, current.id == event.id,
                   current.intent == studyScope.edgeNavigationIntent else { return }
             drag = nil
             if current.isDrawer {
-                track(SidebarMotion.position(start: current.start, translation: Double(event.translation.width),
+                let translation = Double(event.translation.width) - current.translationOffset
+                track(SidebarMotion.position(start: current.start, translation: translation,
                                              width: travel, reduceMotion: reduceMotion))
-                settle(open: SidebarMotion.shouldOpen(start: current.start, translation: Double(event.translation.width),
-                                                       velocity: Double(event.velocity.x), width: travel))
+                let open = SidebarMotion.shouldOpen(start: current.start, translation: translation,
+                                                     velocity: Double(event.velocity.x), width: travel)
+                if open != current.wasOpen { feedback.selectionChanged() }
+                settle(open: open)
             } else if MobileEdgeSwipe.shouldComplete(horizontal: Double(event.translation.width),
                                                      vertical: Double(event.translation.height),
                                                      velocity: Double(event.velocity.x), width: Double(event.width)) {
@@ -208,12 +219,15 @@ struct SidebarNavigationContainer<Content: View>: View {
     private func navigate(_ destination: AppSidebarDestination) {
         close()
         switch destination {
-        case .home: studyScope.showLanguagePicker()
-        case .library:
-            if let language = studyScope.language { studyScope.selectLanguage(language) }
-            else { studyScope.showLanguagePicker() }
+        case .home: studyScope.showHome()
+        case .languagePicker: studyScope.showLanguagePicker()
+        case .library: studyScope.openLibrary(.lessons)
+        case .courses: studyScope.openLibrary(.courses)
         case .words: studyScope.tab = .words
         case .review: studyScope.tab = .review
+        case .progress: studyScope.tab = .progress
+        case .trophies: studyScope.showingTrophies = true
+        case .speaking: studyScope.showingSpeaking = true
         case .account: studyScope.tab = .account
         }
     }

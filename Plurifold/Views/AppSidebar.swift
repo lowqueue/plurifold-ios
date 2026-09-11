@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum AppSidebarDestination: Hashable {
-    case home, library, words, review, account
+    case home, languagePicker, library, courses, words, review, progress, trophies, speaking, account
 }
 
 /// The signed-in root owns presentation and navigation. This panel only offers
@@ -18,9 +18,10 @@ struct AppSidebar: View {
 
     private var selectedDestination: AppSidebarDestination {
         switch studyScope.tab {
-        case .home: studyScope.homePath.isEmpty ? .home : .library
+        case .home: studyScope.homePath.isEmpty ? .home : (studyScope.librarySection == .courses ? .courses : .library)
         case .words: .words
         case .review: .review
+        case .progress: .progress
         case .account: .account
         }
     }
@@ -54,8 +55,12 @@ struct AppSidebar: View {
                     VStack(spacing: 4) {
                         navigationRow(.home, title: "Home", icon: "house")
                         navigationRow(.library, title: "Library", icon: "books.vertical")
-                        navigationRow(.words, title: "Words", icon: "bookmark")
+                        navigationRow(.courses, title: "Courses", icon: "books.vertical")
+                        navigationRow(.words, title: "Saved", icon: "bookmark")
                         navigationRow(.review, title: "Review", icon: "rectangle.on.rectangle")
+                        navigationRow(.progress, title: "Progress", icon: "chart.bar")
+                        navigationRow(.trophies, title: "Trophies", icon: "trophy")
+                        navigationRow(.speaking, title: "Speaking", icon: "waveform")
                         navigationRow(.account, title: "Account", icon: "person.crop.circle")
                     }
 
@@ -69,7 +74,7 @@ struct AppSidebar: View {
 
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Appearance")
-                            .font(.subheadline.monospaced().weight(.semibold))
+                            .font(StudyTypography.font(.subheadline).weight(.semibold))
                             .accessibilityAddTraits(.isHeader)
                         colorwayMenu
                         lightingMenu
@@ -77,7 +82,7 @@ struct AppSidebar: View {
 
                     if let email = session.user?.email {
                         Text(email)
-                            .font(.caption.monospaced())
+                            .font(StudyTypography.font(.caption))
                             .foregroundStyle(Palette.secondary)
                             .lineLimit(2)
                             .truncationMode(.middle)
@@ -88,7 +93,7 @@ struct AppSidebar: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
-        .buttonStyle(.plain)
+        .buttonStyle(GardenPressStyle())
         .foregroundStyle(Palette.ink)
         .background(Palette.surface)
         .task(id: isActive) {
@@ -103,20 +108,20 @@ struct AppSidebar: View {
     }
 
     private var languageSummary: some View {
-        Button { onSelect(.home) } label: {
+        Button { onSelect(.languagePicker) } label: {
             HStack(alignment: .center, spacing: 12) {
                 if let language = studyScope.language {
                     Text(language.flag).font(.title2).accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: 4) {
                         Text(LanguageDisplay.nativeName(for: language.code, fallback: language.name))
-                            .font(.headline.monospaced())
+                            .font(StudyTypography.font(.headline))
                         Text("Change language")
                             .font(.caption)
                             .foregroundStyle(Palette.secondary)
                     }
                 } else {
                     Image(systemName: "globe").font(.title2).accessibilityHidden(true)
-                    Text("Choose a language").font(.headline.monospaced())
+                    Text("Choose a language").font(StudyTypography.font(.headline))
                 }
                 Spacer(minLength: 0)
                 Image(systemName: "chevron.right")
@@ -125,8 +130,8 @@ struct AppSidebar: View {
             }
             .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
             .padding(12)
-            .background(Palette.field)
-            .overlay(RoundedRectangle(cornerRadius: 3).stroke(Palette.line, lineWidth: 1))
+            .background(Palette.field, in: RoundedRectangle(cornerRadius: Palette.controlRadius))
+            .overlay(RoundedRectangle(cornerRadius: Palette.controlRadius).stroke(Palette.line, lineWidth: 1))
             .contentShape(Rectangle())
         }
         .accessibilityLabel(studyScope.language.map { "\($0.name), change language" } ?? "Choose a language")
@@ -139,7 +144,7 @@ struct AppSidebar: View {
                 Image(systemName: icon)
                     .frame(width: 24)
                     .accessibilityHidden(true)
-                Text(title).font(.body.monospaced())
+                Text(title).font(StudyTypography.font(.body))
                 Spacer(minLength: 0)
                 if selected {
                     Image(systemName: "checkmark")
@@ -150,8 +155,8 @@ struct AppSidebar: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
             .frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
-            .background(selected ? Palette.field : Color.clear)
-            .overlay(RoundedRectangle(cornerRadius: 3)
+            .background(selected ? Palette.field : Color.clear, in: RoundedRectangle(cornerRadius: Palette.controlRadius))
+            .overlay(RoundedRectangle(cornerRadius: Palette.controlRadius)
                 .stroke(selected ? Palette.accent : Color.clear, lineWidth: 1))
             .contentShape(Rectangle())
         }
@@ -195,7 +200,7 @@ struct AppSidebar: View {
             Image(systemName: icon).frame(width: 24).accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 3) {
                 Text(title).font(.subheadline)
-                Text(value).font(.caption.monospaced()).foregroundStyle(Palette.secondary)
+                Text(value).font(StudyTypography.font(.caption)).foregroundStyle(Palette.secondary)
             }
             Spacer(minLength: 0)
             Image(systemName: "chevron.up.chevron.down")
@@ -204,8 +209,8 @@ struct AppSidebar: View {
         }
         .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
         .padding(10)
-        .background(Palette.background)
-        .overlay(RoundedRectangle(cornerRadius: 3).stroke(Palette.line, lineWidth: 1))
+        .background(Palette.background, in: RoundedRectangle(cornerRadius: Palette.controlRadius))
+        .overlay(RoundedRectangle(cornerRadius: Palette.controlRadius).stroke(Palette.line, lineWidth: 1))
         .contentShape(Rectangle())
     }
 }

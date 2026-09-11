@@ -234,6 +234,7 @@ def main() -> None:
         "PRODUCT_BUNDLE_IDENTIFIER": "com.plurifold.ios.prototype",
         "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon",
         "INFOPLIST_KEY_CFBundleDisplayName": "Plurifold",
+        "INFOPLIST_KEY_NSMicrophoneUsageDescription": "Plurifold uses your microphone for live speaking practice when you choose to begin.",
         "INFOPLIST_KEY_ITSAppUsesNonExemptEncryption": "NO",
         "INFOPLIST_KEY_LSApplicationCategoryType": "public.app-category.education",
         "INFOPLIST_KEY_UIApplicationSceneManifest_Generation": "YES",
