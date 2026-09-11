@@ -88,18 +88,20 @@ struct WelcomeLanguageBubbles: View {
 
     private func bubbleLabel(_ language: NativeWelcomeLanguage, size: Double?) -> some View {
         let selected = selection.contains(language.code)
+        let dimension: CGFloat? = size.map { CGFloat($0) }
+        let labelFont: Font = size == nil ? StudyTypography.font(.subheadline, weight: .medium) : Font.system(size: 13, weight: .medium)
         return VStack(spacing: 7) {
             Text(LanguageFlag.symbol(for: language.code))
                 .font(.system(size: 31))
                 .accessibilityHidden(true)
             Text(language.nativeName)
-                .font(size == nil ? .body.weight(.medium) : .system(size: 13, weight: .medium))
+                .font(labelFont)
                 .foregroundStyle(Palette.ink)
                 .lineLimit(size == nil ? nil : 1)
                 .minimumScaleFactor(0.85)
         }
         .padding(size == nil ? 14 : 8)
-        .frame(width: size.map(CGFloat.init), height: size.map(CGFloat.init))
+        .frame(width: dimension, height: dimension)
         .frame(maxWidth: size == nil ? .infinity : nil)
         .background {
             RoundedRectangle(cornerRadius: 25, style: .continuous)
