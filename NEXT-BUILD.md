@@ -1,52 +1,35 @@
-# Build the latest Plurifold update
+# Build the Garden iOS update
 
-Use the existing GitHub repository, Codemagic application, and TestFlight group. Your signing configuration remains in place.
+Use the existing **lowqueue/plurifold-ios** repository, **main** branch, Codemagic app, and internal TestFlight group. The signing configuration and App Store distribution settings are unchanged.
 
-## Start the build
+## Release
 
-1. Open [lowqueue/plurifold-ios](https://github.com/lowqueue/plurifold-ios) and confirm branch **main** shows **Make the sidebar follow touch with rounded spring motion**.
-2. Open **plurifold-ios** in Codemagic. Select **main** and refresh the configuration if needed.
-3. Choose **Start new build → Plurifold - TestFlight**.
-4. Confirm the build overview shows the latest GitHub commit. Rebuilding an older commit will not include this update.
+1. Open **plurifold-ios** in Codemagic and select **main**.
+2. Choose **Start new build → Plurifold - TestFlight**.
+3. Check that the build overview names the latest Garden iOS commit.
+4. After Apple finishes processing, assign the build to the existing internal group if needed, then open **TestFlight → Plurifold → Update**.
 
-Codemagic regenerates the Xcode project, runs the native test suite on its Mac, signs the Release IPA, and uploads it for internal TestFlight testing. You can close its browser tab while it runs. The installed app does not need Codemagic running.
+The workflow regenerates the project, runs XCTest on an iPhone simulator, signs the Release IPA, and uploads it for internal testing. The GitHub **iOS validation** workflow also builds and tests the app on a Mac without signing.
 
-After Apple's processing completes, assign the build to your existing internal testing group if needed. Open **TestFlight → Plurifold → Update** on your iPhone.
+## What changed
 
-## Check this revision
+- Garden is the default layout. Account retains Original, Verdant, Vermilion, Blue Hour, and System/Light/Dark lighting. Colorways affect the full screen palette and scenery.
+- Native Home provides a language dashboard, a real saved reading place or available starting lesson, and quick links. Courses and Library have separate destinations and search state.
+- Lesson cards keep a compact thumbnail, title, and Open/Continue action. More reveals the details. Course chapters and existing reader/media features remain available.
+- Progress uses the same account word-form states and known-only coverage as the website. Trophies read account-wide achievement evidence. There are no invented weekly gains, fluency scores, or maxims.
+- Welcome has interactive physical language tiles, search and selection, native sign-in and signup, and accessible static alternatives. Confirmation-email signup leaves the app signed out until the user confirms and signs in. Password recovery opens the existing secure website flow.
+- Speaking opens the private trial inside the app. The isolated hosted WebRTC room uses native authenticated requests for access, starting/ending calls, and saving phrases. Account tokens never enter the page. Live microphone/audio behavior still needs physical-device validation.
+- The drawer has a wider edge target, better slow-drag recognition, scroll/control conflict rejection, interruption handling, and subtle completion feedback.
 
-- From Home, a language library, Words, Review, and Account, swipe right from the physical left edge. The sidebar should follow your finger immediately as you pull slowly, stop, or reverse. On release, its position and speed should decide whether it springs open or closed. The hamburger opens the same panel. Tap outside it, use Close, or drag left across the drawer to dismiss it. The closing drag should follow your finger too.
-- Open a course, then a chapter. Each left-edge swipe should go back exactly one screen: chapter → outline → library. Only the next swipe at the library opens the sidebar. Check a standalone video lesson too; its native back button must still work without a double pop.
-- Leave a chapter in Home's stack, switch to Words or Review, and edge-swipe. It must open the sidebar without popping the inactive chapter. Sidebar Words/Review should keep the selected language; Home allows a different language and Library returns to that language's library.
-- Try tiny, cancelled, reversed, and mostly vertical edge movements, plus normal text selection and scrolling away from the edge. Swipe rapidly twice, switch tabs during a gesture, background the app, and try the edge with the player, dictionary/AI details, source image, or account sheet open. No hidden destination should change under a modal sheet.
-- Pull past the fully open position to check gentle bounded resistance. Reverse before releasing, and catch the panel while it is springing open or closed. It should continue from its visible position without jumping. Check the rounded top and bottom corners, small outer insets, continuous outline, and gradually dimming background.
-- Test the sidebar in each colorway, portrait/landscape, and larger text. Test Reduce Motion, the menu/Close buttons with VoiceOver, and the accessibility escape gesture. Sidebar content should scroll independently while the screen behind it remains inactive.
+## Device acceptance checks
 
-- Open Georgian → GeoFL A1 → Point and identify, then Match words to objects. The activity should show the original worksheet and instructions, with audio available above it. Enlarge the source and use Done to close it.
-- Use Previous and Next, then Back to course. Each activity should start at its top, the outline should retain its place, and chapter changes must not accumulate a stack of readers or move the tab bar.
-- Open Estonian and Japanese courses. Page controls should show one source image at a time; patterns and supplied meanings remain readable in the chosen colorway. Test larger text and a failed image connection.
-- Try a Georgian fill-in or choice exercise and an Estonian question. Blank answers are skipped; editing clears that answer's result; Reveal and Clear remain separate. These checks use the authored answer keys locally. Exercise drafts and results are local to the current activity; this update does not sync course completion or replace the website's handwriting and word-search tools.
-- Open Transcript and word study for the existing dictionary and short-phrase AI selection. Show supplied meanings, open Words and expressions, and check audio stops when dismissing the player.
+- Try Garden and Original with all three colorways in light/dark mode. Rotate the device and increase text size. Home, courses, library, Saved, Review, Progress, Account and welcome should remain readable.
+- Drag, flick and select the welcome tiles. Search in English and native names. Enable Reduce Motion, Reduce Transparency and VoiceOver. Verify signup confirmation, sign-in, sign-out, and account separation.
+- Select a language, open Courses and Library, search each, expand More, open a lesson and a course chapter. Previous/Next must also work when entering a chapter from Home. Existing transcript selection, dictionary, AI, playback and saved reading places must remain functional.
+- Compare Progress with the same language on the website after refreshing. Check Known/Learning/Familiar and saved phrase totals, coverage filters, and account-wide trophies.
+- As the owner, open Speaking, grant microphone access, complete a short conversation, save a feedback phrase and find it in Saved after closing the room. Verify rejection of microphone permission, network interruption/retry, backgrounding, dismissal during connection, and switching from lesson audio. Another account must remain outside the private speaking trial.
+- Pull slowly from the left edge, stop, reverse, release and catch the settling drawer. Try vertical scrolling near the edge and use sliders/text selection. In a nested reader the edge goes back once; at Home/Library it opens navigation. Modal sheets must prevent hidden navigation.
 
-- From Home, open each available language. Open a standalone lesson and a nested course chapter, then go back. Use the header to switch language while inside a reader, return Home, and select the same language again. The stack should change destinations without replacing its navigation host. The reported crash has no attached native crash log, so its resolution still needs this device check.
-- Confirm the top-left header shows the full lowercase `plurifold` wordmark with one narrow block cursor immediately after the final letter, matching the website. The cursor should blink every 1.1 seconds, remain visible with Reduce Motion, and resume after backgrounding. Check all colorways and larger text; the wordmark must not shift as the cursor blinks.
+## Current limits
 
-- Open a language from Home. Check the Library cover cards, channel/ILR filters, real word coverage, saved-entry counts, and separate course folders. Test a lesson without an image and offline image loading; it should retain the language cover.
-- Scroll down. The masthead, account initial, and language switcher should remain accessible. Choose another language while in a course or reader; the new language's library must replace the old destination. Words and Review must follow the new language.
-- Tap your initial at top right. Try Verdant, Vermilion, and Blue Hour with Light, Dark, and System. Close and relaunch: the selection should persist. Set Vermilion + Light to match the website recording.
-- Change colorway from an open reader, dismiss Account, and confirm the same reading place, selection, and player state remain. Check the word-details control and system Light/Dark changes. Test larger text and VoiceOver for header controls, cards, and theme choices.
-
-- Hold a player transcript sentence for about **0.45 seconds**. Its original sentence should stay fixed while the player pauses and the study sheet opens.
-- Hold a word for **0.2 seconds**, then drag. Neighbouring selected words should join into one blue shape per line, with a small bubble response and one haptic tick as you cross words. Check reversing, multiline dragging, clear, normal scrolling, and Reduce Motion.
-- Highlight **2 words**, then **14 words**, and release. Each should open AI automatically. Select **15 words** or a paragraph: the app should show the short-selection message without requesting AI. Downward dragging should extend the highlight freely. Repeat in Study sentence. One word still offers a nearby Word details button.
-- Choose **Italian** on Home. Words and Review should show only Italian. Switch languages and check both tabs again. Review offers **Reveal meaning**, **Again**, and **Got it** for a session round.
-- Save a meaning on desktop, return to the app, and open that term. Check **Your saved definition** and its original context.
-- Complete a desktop phrase lookup without saving it. Select the same phrase in the same passage on mobile and check **Earlier AI explanation from your account**. For a single word, AI remains behind Explain with AI. Different contexts require their own explanation.
-- Try Estonian **olen**, **lapsed**, Georgian **გამარჯობა**, or **ია**. Inspect Dictionary and the linked source, then save one meaning. Attribution should remain visible in Words/Review and on desktop. Some forms, such as **ბავშვებო**, have no entry; a missing entry must be distinct from a temporary connection failure.
-- Type a follow-up in Ask. Use the X, keyboard Done, and a tap outside the editor to dismiss the keyboard without closing details or losing the draft. Ask and Save should still respond. The From this lesson panel remains absent.
-
-The matching server update includes `/api/mobile/dictionary` and read-only reuse of earlier explanations through `/api/define`. New mobile AI generation still uses `mobile-lite`; dictionary lookup and saved meanings do not require generating AI. No API keys belong in the iOS repository.
-
-See [README.md](README.md) for the broader device checklist and [VALIDATION.md](VALIDATION.md) for checks already completed. Local grammar checks do not replace the Codemagic build or iPhone verification.
-
-If a build fails, share the expanded failing-step log and commit. The test artifacts include `build/test-results/xcodebuild-test.log` and the `.xcresult` bundle. Passwords, account tokens, and signing keys are not needed.
+Course activity drafts/local checks retain their previous behavior; this update does not invent synced course completion. Advanced handwriting and website-specific exercise tools remain on the website. Review keeps the existing native queue behavior. Downloaded lessons, an offline write queue, in-app purchases, background audio and lock-screen controls remain outside this release.

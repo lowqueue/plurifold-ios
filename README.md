@@ -45,11 +45,15 @@ Codemagic runs a finite build job on a cloud Mac. It regenerates the Xcode proje
 
 Use **Account → Refresh library and study data**, or pull to refresh the library, when checking website changes. Synchronization occurs on loading, returning to the foreground, refresh, and successful saves. Foreground refresh waits for native writes to finish. It is not a continuous live subscription.
 
+## Garden update
+
+Garden is the default native layout, with Original retained in Account. Verdant, Vermilion and Blue Hour each support light/dark mode. Home, separate Courses/Library destinations, compact expandable lesson cards, Saved/Review, account-backed Progress and Trophies, interactive language welcome, native signup, and private in-app speaking are included. See [NEXT-BUILD.md](NEXT-BUILD.md) for release and device acceptance checks.
+
 ## Current scope
 
-The app uses a network connection for sign-in, live lessons, AI, and shared study data. It does not provide downloaded lessons or an offline write queue in this build. In-App Purchases and membership entitlements are not implemented yet; AI remains available to signed-in free testers. Signup and password reset open the existing website flow; return to the app to sign in afterward.
+The app uses a network connection for sign-in, live lessons, AI, and shared study data. It does not provide downloaded lessons or an offline write queue in this build. In-App Purchases and membership entitlements are not implemented yet; AI remains available to signed-in free testers. Signup and sign-in are native. Email-confirmation signup keeps the app signed out until confirmation; return to sign in afterward. Password reset opens the existing secure website flow.
 
-Specialized exercises, handwriting, and live voice practice continue through website links. Their web interfaces have not been rebuilt as native screens. Original prototype lessons and tests remain in the source as fixtures, but the signed-in app opens Home. The old prototype's device-local words, quiz scores, and progress are not automatically imported into an account.
+Specialized exercises and handwriting continue through website links. Private speaking introduction now opens in an isolated in-app WebRTC room with native authentication, microphone handling, feedback, and explicit phrase saving. It reuses the website voice engine rather than recreating its conversation logic. Original prototype lessons and tests remain in the source as fixtures, but the signed-in app opens Home. The old prototype's device-local words, quiz scores, and progress are not automatically imported into an account.
 
 Every word can be selected regardless of its vocabulary status. VoiceOver retains native text-selection tools with a **Study selection** action and an accessible details control. System voice availability depends on installed voices. Background playback and lock-screen controls are outside this update. Following uses the source's passage timings, which may cover more than one sentence; it does not synthesize word-level timestamps.
 

@@ -115,6 +115,36 @@ final class MobileStudyScopeTests: XCTestCase {
         XCTAssertEqual(scope.homePath.last, .lesson(id: "first"))
     }
 
+    func testHomeCourseChapterCanMoveWithoutAnOutlineEntry() {
+        let scope = MobileStudyScope()
+        let italian = language("it-IT", "Italian")
+        let course = activityCourse()
+        scope.selectLanguage(italian)
+        scope.showHome()
+        scope.openLesson("first")
+        scope.openCourseActivity("second", in: course)
+        XCTAssertEqual(scope.homePath, [.library(italian), .lesson(id: "second")])
+        scope.openCourseActivity("first", in: course)
+        XCTAssertEqual(scope.homePath.count, 2)
+        XCTAssertEqual(scope.homePath.last, .lesson(id: "first"))
+    }
+
+    func testCoursesAndLibraryKeepDistinctSectionsOnTheSameNavigationHost() {
+        let scope = MobileStudyScope()
+        let italian = language("it-IT", "Italian")
+        scope.selectLanguage(italian)
+        scope.openLibrary(.courses)
+        XCTAssertEqual(scope.librarySection, .courses)
+        XCTAssertEqual(scope.homePath, [.library(italian)])
+        scope.openLibrary(.lessons)
+        XCTAssertEqual(scope.librarySection, .lessons)
+        XCTAssertEqual(scope.homePath, [.library(italian)])
+        scope.showHome()
+        XCTAssertFalse(scope.showingLanguagePicker)
+        XCTAssertTrue(scope.homePath.isEmpty)
+        XCTAssertEqual(scope.language, italian)
+    }
+
     func testCourseNavigationRejectsUnknownChapterAndStaleLanguage() {
         let scope = MobileStudyScope()
         let course = activityCourse()
@@ -164,7 +194,7 @@ final class MobileStudyScopeTests: XCTestCase {
     }
 
     func testInactiveHomeReaderDoesNotHijackOtherTabsEdgeSwipe() {
-        for tab in [MobileStudyTab.words, .review, .account] {
+        for tab in [MobileStudyTab.words, .review, .progress, .account] {
             let scope = MobileStudyScope()
             scope.selectLanguage(language("it-IT", "Italian"))
             scope.homePath.append(.course(id: "course", search: ""))
